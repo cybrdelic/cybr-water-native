@@ -22,7 +22,9 @@ class RestoreTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.root = Path(self.temp.name)
+        # Match production ROOT, which is resolved before containment checks.
+        # Hosted Windows temp aliases and macOS /var can resolve elsewhere.
+        self.root = Path(self.temp.name).resolve()
         self.data = b"verified native state bytes" * 5
         self.target = self.root / "state.bin"
         (self.root / "part").write_bytes(self.data)
