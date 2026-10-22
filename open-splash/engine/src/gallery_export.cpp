@@ -1,3 +1,4 @@
+#include <sstream>
 // Optional source-only companion for gallery_scenes.hpp. The same ground zero
 // set and fractured-rock fields drive both Solver collisions and this geometry.
 // Build separately; this file does not modify the hero executable/build rules.

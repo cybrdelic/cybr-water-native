@@ -26,3 +26,6 @@ __pycache__/
 # Original open-splash snapshots restored from committed transport parts
 /open-splash/handoff_state/*.bin
 /open-splash/representative_states/*.bin
+
+# Portable local builds and bounded audit outputs
+/.local/

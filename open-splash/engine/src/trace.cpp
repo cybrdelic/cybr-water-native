@@ -28,7 +28,8 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <omp.h>
+#include "openmp_compat.hpp"
+#include "plane_precision.hpp"
 
 namespace cybr {
 constexpr float PI = 3.14159265358979323846f;
@@ -277,6 +278,7 @@ struct BVH {
         double deltaT=3*(arithmeticGamma(5)*maxE*maxZ+deltaE*maxZ+deltaZ*maxE+deltaE*deltaZ);
         double inv=1.0/det,du=V*inv,dv=W*inv,d=T*inv;
         if(std::abs(T)<=deltaT){
+            if constexpr(std::numeric_limits<long double>::digits>std::numeric_limits<double>::digits){
             long double ex=static_cast<long double>(b.x)-a.x,ey=static_cast<long double>(b.y)-a.y,ez=static_cast<long double>(b.z)-a.z;
             long double fx=static_cast<long double>(c.x)-a.x,fy=static_cast<long double>(c.y)-a.y,fz=static_cast<long double>(c.z)-a.z;
             long double nx=ey*fz-ez*fy,ny=ez*fx-ex*fz,nz=ex*fy-ey*fx;
@@ -286,6 +288,13 @@ struct BVH {
             long double preciseT=numerator/denominator;
             if(preciseT<=0||preciseT>=h.t)return false;
             d=static_cast<double>(preciseT);
+            }else{
+                const double preciseT=cybr_precision::planeDistance(
+                    {a.x,a.y,a.z},{b.x,b.y,b.z},{c.x,c.y,c.z},
+                    {r.exactOrigin.x,r.exactOrigin.y,r.exactOrigin.z},{r.d.x,r.d.y,r.d.z});
+                if(!std::isfinite(preciseT)||preciseT<=0||preciseT>=h.t)return false;
+                d=preciseT;
+            }
         }else{
             if(det>0){if(T<=RAY_EPS*det||T>=h.t*det)return false;}
             else if(T>=RAY_EPS*det||T<=h.t*det)return false;
@@ -1120,8 +1129,9 @@ void writeJson(const std::string &path,const Options &o,const BVH &bvh,const Pho
      <<"  \"nonfinite_paths\": "<<stats.invalid<<", \"medium_underflows\": "<<stats.mediumUnderflows<<", \"unclosed_medium_escapes\": "<<stats.unclosedEscapes<<", \"max_depth_terminations\": "<<stats.maxDepthTerminations<<",\n"
      <<"  \"ray_position_precision\": \"float64\", \"mesh_storage_precision\": \"float32\", \"ray_minimum_distance_metres\": "<<RAY_EPS<<",\n"
      <<"  \"ray_origin_offset\": \"Float64 componentwise gamma(12) position-error envelope projected onto geometric normal, followed by outward nextafter rounding\",\n"
-     <<"  \"triangle_intersection\": \"Watertight Float64 sheared edge test; either-sign uncertain near-origin plane distance uses extended precision before sign rejection; no spatial cutoff\",\n"
-     <<"  \"uncertain_triangle_plane_precision_bits\": "<<std::numeric_limits<long double>::digits<<",\n"
+     <<"  \"triangle_intersection\": \"Watertight Float64 sheared edge test; either-sign uncertain near-origin plane distance uses extended long double or compensated double-double before sign rejection; no spatial cutoff\",\n"
+     <<"  \"uncertain_triangle_plane_strategy\": \""<<(std::numeric_limits<long double>::digits>std::numeric_limits<double>::digits?"extended-long-double":"compensated-double-double")<<"\",\n"
+     <<"  \"platform_long_double_precision_bits\": "<<std::numeric_limits<long double>::digits<<",\n"
      <<"  \"sphere_intersection\": \"Float64 closest approach with reprojection to the analytic surface\",\n"
      <<"  \"material_identity\": \"stable role/group ranges independent of dynamic primitive count\",\n"
      <<"  \"finite_pixels\": "<<finitePixels<<", \"mean_linear_luminance\": "<<sum/pixels.size()<<", \"peak_linear_channel\": "<<peak<<",\n"

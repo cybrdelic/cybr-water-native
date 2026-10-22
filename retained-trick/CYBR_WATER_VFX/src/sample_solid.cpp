@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <omp.h>
+#include "openmp_compat.hpp"
 
 namespace {
 using water::Vec3;
