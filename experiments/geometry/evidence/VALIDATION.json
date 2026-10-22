@@ -1,0 +1,22 @@
+{
+  "duration_s": 10,
+  "fps": 24,
+  "native_states": 241,
+  "complete": {
+    "time": 10,
+    "frame": 240,
+    "steps": 1006,
+    "particles": 26314,
+    "whitewater": 0,
+    "wall_seconds": 23.589549068,
+    "volume_ledger_error_m3": 2.94528182225e-12
+  },
+  "frames_rendered": [
+    48,
+    120,
+    168
+  ],
+  "source": "CYBR_WATER_VFX/src/gallery_scenes.hpp",
+  "status": "failed_visual_acceptance",
+  "reason": "water lost raised ribbon and ring shape around midpoint; no film-quality result"
+}

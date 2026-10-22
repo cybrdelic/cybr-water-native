@@ -1,0 +1,24 @@
+{
+  "compiler": "g++ (Debian 14.2.0-19) 14.2.0",
+  "python": "3.13.5",
+  "architecture": "x86_64",
+  "system": "Linux",
+  "libraries": {
+    "numpy": "2.3.5",
+    "pandas": "2.2.3",
+    "Pillow": "12.3.0"
+  },
+  "source_sha256": {
+    "engine/src/fluid.hpp": "0404fb0de116cacdbe04002b1dcdf7cb6b0806a2ed081c2f37ff88ed891411b8",
+    "engine/src/gallery_scenes.hpp": "3b7279d4ed9a378db25bd01f84c0bcd7c8b8c1ce1a6dfa4c21d657f77f889d4c",
+    "engine/src/gallery_simulate.cpp": "05aeeb63d007ba0d3897e4a59e3c40d80e391dbdd23f3a65476894d7436b9d89",
+    "engine/src/gallery_export.cpp": "6ba61524f054246c3236dbe32f2683724c3023eee82169d49f87d5637b8c9d8c",
+    "engine/src/surface.cpp": "0a6dcfe8513be5f0c8ea4ea8350b8a91ce3288aebf079c59817ac43b3a2e2361",
+    "engine/src/trace.cpp": "a5a898307abb9d03e26dca1a7fafc5ae3fc283fe8fb21c9bbc37ba42a863af53"
+  },
+  "render_method": "deterministic native direct-light Whitted preview; 4 fixed anti-aliasing samples; no image-space filters",
+  "renderer_threads_final": 4,
+  "first_simulation_threads_as_launched": 3,
+  "domain_handoff_simulation_threads": 2,
+  "portability_note": "Original builds include portable and -march=native optimized executables. Floating point results are not guaranteed bitwise identical across compilers or thread counts."
+}

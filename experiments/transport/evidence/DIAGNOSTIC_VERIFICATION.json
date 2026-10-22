@@ -1,0 +1,14 @@
+{
+  "scene": "full_choreographed_waterbending_trick",
+  "frames": 240,
+  "fps": 24,
+  "duration_s": 10,
+  "unique_solver_states": 240,
+  "fluid_grid_dx_m": 0.1,
+  "render_type": "particle-state diagnostic, not beauty",
+  "min_markers": 1026,
+  "max_markers": 8835,
+  "midpoint_markers": 3721,
+  "source": "cache/frame_*.bin",
+  "native_surface_status": "failed volume solver at t=5 seconds; final native beauty render not produced"
+}

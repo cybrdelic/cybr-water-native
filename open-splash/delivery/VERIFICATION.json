@@ -1,0 +1,217 @@
+{
+  "status": "completed_native_open_splash_revision",
+  "video": "CYBR_WATERBENDING_OPEN_SPLASH_10S.mp4",
+  "sha256": "fbb5c33d6ecca38a45c8062e2e65bd405f803daed82f5a91d99d2820299e34b8",
+  "width": 960,
+  "height": 540,
+  "duration_s": 10,
+  "fps": 24,
+  "native_rendered_frames": 240,
+  "native_simulation_states": 241,
+  "unique_simulation_state_hashes": 240,
+  "unique_native_image_hashes": 240,
+  "unique_decoded_frames": 240,
+  "all_frame_timestamps_checked": true,
+  "full_movie_decoded": true,
+  "image_generation": false,
+  "frame_interpolation": false,
+  "temporal_denoising": false,
+  "solver": "staggered MAC free-surface APIC with incomplete-Cholesky PCG pressure",
+  "uniform_grid_spacing_m": 0.0299999993294,
+  "marker_spacing_m": 0.00999999977648,
+  "grid": [
+    334,
+    94,
+    420
+  ],
+  "lower": [
+    -6,
+    -0.119999997318,
+    -5.09999990463
+  ],
+  "upper": [
+    4.01999998093,
+    2.70000004768,
+    7.5
+  ],
+  "domain_handoff": {
+    "at_frame": 216,
+    "time_s": 9.0,
+    "step_base": 1068,
+    "reason": "Avoid loss of visible fast spray at the open numerical outlet.",
+    "preserved": "Particle positions, velocities, volumes and IDs exactly; secondary positions/velocities/radii/ages/lifetimes/types.",
+    "reconstructed": "APIC affine gradients from transferred snapshot velocities; pressure warm start reset. Not a bitwise checkpoint continuation.",
+    "stage1": {
+      "lower": [
+        -3.3,
+        -0.12,
+        -2.52
+      ],
+      "upper": [
+        3.3,
+        3.3,
+        2.52
+      ]
+    },
+    "stage2": {
+      "lower": [
+        -6.0,
+        -0.12,
+        -5.1
+      ],
+      "upper": [
+        4.02,
+        2.7,
+        7.5
+      ]
+    }
+  },
+  "handoff_conservation_check": {
+    "positions_and_velocities_bitwise_identical": true,
+    "max_position_change_m": 0.0,
+    "max_velocity_change_m_s": 0.0,
+    "volumes_bitwise_identical": true,
+    "ids_bitwise_identical": true,
+    "primary_markers": 439737
+  },
+  "closed_frictionless_faces": [
+    false,
+    false,
+    true,
+    false,
+    false,
+    false
+  ],
+  "face_order": [
+    "x-low",
+    "x-high",
+    "y-low",
+    "y-high",
+    "z-low",
+    "z-high"
+  ],
+  "lateral_boundaries_open": true,
+  "minimum_lateral_clearance_m": 0.87882065773,
+  "max_markers_within_1cm_of_lateral_domain": 0,
+  "max_markers_within_2cells_of_lateral_domain": 0,
+  "initial_markers": 439737,
+  "final_markers": 439737,
+  "initial_volume_m3": 0.43973699889,
+  "final_volume_m3": 0.43973699889,
+  "emitted_volume_m3": 0.0,
+  "outflow_volume_m3": 0.0,
+  "final_volume_ledger_error_m3": 0,
+  "max_abs_volume_ledger_error_m3": 0.0,
+  "ring_elevated_volume_above_08m_at_75s_m3": 0.262192999338,
+  "control_off_after_s": 8.55,
+  "whitewater_max_count": 18063,
+  "whitewater_final_count": 18063,
+  "primary_sample_equivalent_drop_diameter_mm_min": 12.407009807546437,
+  "primary_sample_equivalent_drop_diameter_mm_max": 12.407009807546437,
+  "primary_droplet_size_scope": "Volumes of numerical liquid markers, NOT a prediction of the physical atomization spectrum. No rendered-radius shrinking.",
+  "fragment_hysteresis_enter_marker_spacings": 3.2,
+  "fragment_hysteresis_rejoin_marker_spacings": 2.2,
+  "surface_lattice_m": 0.012,
+  "surface_support_radius_m": 0.032,
+  "scalar_smoothing_passes": 3,
+  "max_reconstructed_dense_volume_relative_error": 0.001979633513162622,
+  "all_surface_solves_passed": true,
+  "integrator": "native deterministic direct-light Whitted preview",
+  "aa_samples_per_pixel": 4,
+  "max_bounces": 12,
+  "full_global_illumination": false,
+  "maximum_rendered_nonfinite_paths": 0,
+  "post_release_translational_plus_gravitational_energy_initial_J": 3623.80210446,
+  "post_release_translational_plus_gravitational_energy_final_J": 1561.0865635659998,
+  "post_release_max_rise_above_initial_energy_J": 0.0,
+  "energy_scope": "Sampled translational kinetic plus gravitational potential only. Does not include APIC affine energy, free-surface energy, or work carried out through open exits. Not a full energy theorem.",
+  "tests": {
+    "solver_tests.log": {
+      "passed": true,
+      "quadratic_weight_error": 1.05973953168e-07,
+      "quadratic_first_moment_error_m": 8.17221401661e-09,
+      "quadratic_second_moment_error_m2": 4.76514064318e-10,
+      "pressure_symmetry_relative_error": 6.94130356802e-07,
+      "pressure_quadratic_energy": 619.960061929,
+      "projection_divergence_ratio": 5.05801985957e-06,
+      "merge_volume_error_m3": 2.03726813197e-08,
+      "merge_momentum_error_m4_s_inv": 1.66454213968e-07,
+      "split_volume_error_m3": 2.03726813197e-08,
+      "restart_max_state_error": 0,
+      "incompatible_checkpoint_rejected": true,
+      "apic_affine_velocity_error_m_s": 4.17232513428e-07,
+      "inlet_divergence_l2_s_inv": 3.46957832896e-06,
+      "continuous_solid_clearance_m": 0.00200012326241,
+      "masked_inlet_flux_m3_s": 0.288000020027,
+      "masked_inlet_attempts": 3021,
+      "masked_inlet_rejected_attempts": 1517,
+      "masked_inlet_volume_error_m3": 6.99999461039e-05,
+      "masked_inlet_marker_volume_m3": 0.000125000005588,
+      "masked_inlet_emits_every_interval": true,
+      "masked_inlet_restart_position_error_m": 0,
+      "apic_boundary_value_error_m_s": 1.12022270571e-07,
+      "apic_boundary_gradient_error_s_inv": 4.17232513428e-07,
+      "apic_constant_boundary_gradient_error_s_inv": 3.26899835326e-12,
+      "apic_split_affine_error_m_s": 3.31634524287e-08,
+      "apic_split_momentum_error_m4_s_inv": 2.93303228927e-11,
+      "closed_domain_normal_flux_m_s": 0,
+      "closed_domain_tangential_velocity_preserved": true,
+      "closed_domain_fingerprint_distinct": true
+    },
+    "optics_native_tests.json": {
+      "passed": true,
+      "normal_water_fresnel": 0.02037318423,
+      "white_sphere_mean": 1,
+      "beer_sphere_mean": 0.455922346,
+      "beer_sphere_analytic": 0.4555640221,
+      "nested_air_water": true,
+      "motion_triangle": true,
+      "tiny_closed_tetrahedron": true,
+      "adaptive_origin_sides": true,
+      "near_origin_plane_pair": true,
+      "max_tested_bsdf_energy": 0.4780359909
+    },
+    "splash_boundary_checks.json": {
+      "passed": true,
+      "lateral_faces_open": true,
+      "open_marker_not_clamped": true,
+      "open_outflow_recognized": true,
+      "old_wall_negative_control": true,
+      "inlet_count": 0,
+      "max_post_release_guidance": 0
+    },
+    "fragment_phase_checks.json": {
+      "passed": true,
+      "hysteresis_enter_spacing": 3.2,
+      "hysteresis_exit_spacing": 2.2,
+      "sparse_ligament_preserved": true,
+      "same_state_restart_idempotent": true,
+      "old_count_cutoff_negative_control": true,
+      "isolated_volume_preserved": true
+    },
+    "retained_guidance_checks.json": {
+      "passed": true,
+      "closed_guide_error_m": 1.93141e-07,
+      "target_speed_max_m_s": 2.14271,
+      "feedforward_accel_max_m_s2": 19.7409,
+      "transition_velocity_jump_m_s": 0.000629563,
+      "feedback_equilibrium_error_m_s": 5.96046e-07,
+      "inlet_count": 0,
+      "guidance_off_after_s": 8.55,
+      "legacy_preserved": true
+    }
+  },
+  "scope_limitations": [
+    "Uniform 3 cm spacing with an explicit domain extension at 9 s, not an adaptive hierarchy.",
+    "At the 9 s snapshot handoff p/v/volume/IDs were unchanged; APIC affine gradients were reconstructed and pressure warm start reset. Not a bitwise checkpoint continuation.",
+    "One-way flow-derived visual spray/foam/bubble parcels; no resolved air pressure or validated physical atomization-size spectrum.",
+    "Primary detached markers still have finite numerical volume; the 1 cm sampling does not resolve microscopic droplets or sub-grid capillary breakup.",
+    "Deterministic preview approximates indirect illumination; not converged global illumination."
+  ],
+  "secondary_boundary_audit": {
+    "minimum_saved_secondary_lateral_clearance_m": 0.10388288497924769,
+    "outside_secondary_sample_observations": 0,
+    "scope": "Counts occurrences in saved states; samples have finite lifetimes and are not a conserved physical phase."
+  },
+  "all_primary_volume_ID_and_secondary_input_hashes_checked": true
+}

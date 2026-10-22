@@ -1,0 +1,109 @@
+{
+  "format": "lossless-file-parts-v1",
+  "chunk_bytes": 8388608,
+  "reason": "Preserve original binary snapshots while keeping each encoded upload below 16 MiB.",
+  "files": [
+    {
+      "path": "handoff_state/frame_000216.bin",
+      "bytes": 14071616,
+      "sha256": "f2b0f58e3790da775d8a4ba02b40d50b4ef0a5ae071dcb2161f2cca9abc7633f",
+      "parts": [
+        {
+          "path": "handoff_state/frame_000216.bin.part000",
+          "bytes": 8388608,
+          "sha256": "3f1d857e327525174d37d253250bc43c756c03631e5c11afdf9860a869d24ca0"
+        },
+        {
+          "path": "handoff_state/frame_000216.bin.part001",
+          "bytes": 5683008,
+          "sha256": "ae4a8786cdf9f01733ab03386b6a8fbfd455032f9179456e0df94e8055c2eae9"
+        }
+      ]
+    },
+    {
+      "path": "representative_states/frame_000000.bin",
+      "bytes": 14071616,
+      "sha256": "30922278a2161cc66dffa5d067d7dff8718f9193fff187be97f44307ac3b66aa",
+      "parts": [
+        {
+          "path": "representative_states/frame_000000.bin.part000",
+          "bytes": 8388608,
+          "sha256": "33e739aad03789fa35e8884ad7436e52a577d8638316e6ac914e6b39f6f0bb13"
+        },
+        {
+          "path": "representative_states/frame_000000.bin.part001",
+          "bytes": 5683008,
+          "sha256": "4f352fe20b1ad610197bb7b2fdb1b1ce62f53eb1bcca2ebf501e9f145c310577"
+        }
+      ]
+    },
+    {
+      "path": "representative_states/frame_000180.bin",
+      "bytes": 14071616,
+      "sha256": "6907721307fc18d2caf9abb8fe20162ccaf2aa642680c12143b7952eb042c663",
+      "parts": [
+        {
+          "path": "representative_states/frame_000180.bin.part000",
+          "bytes": 8388608,
+          "sha256": "a4d228ec8717ac9d4c506d1760ad1f93f60db967c8b66b9f887471e22e967f5a"
+        },
+        {
+          "path": "representative_states/frame_000180.bin.part001",
+          "bytes": 5683008,
+          "sha256": "780f1b357ec73ed1f52f182bea3b4a33b9b0c2e0af68053590cec97b4e52336a"
+        }
+      ]
+    },
+    {
+      "path": "representative_states/frame_000216.bin",
+      "bytes": 14071616,
+      "sha256": "5affefab82b050a090f023ed1e2d4e0968f2938b826472391ed6ebbdcfb86c5f",
+      "parts": [
+        {
+          "path": "representative_states/frame_000216.bin.part000",
+          "bytes": 8388608,
+          "sha256": "b7a01d744a79c46bc95851d13036804e8593b0ffaedeef637acb57b1283258cd"
+        },
+        {
+          "path": "representative_states/frame_000216.bin.part001",
+          "bytes": 5683008,
+          "sha256": "f1938f154ffada0a824c13fb3034600bcfb704f62239c98dd452e49761efa625"
+        }
+      ]
+    },
+    {
+      "path": "representative_states/frame_000234.bin",
+      "bytes": 14071616,
+      "sha256": "203b05fe654fe93f000e48f82dc9fc39b2260b4fdbf895a37dd0334db3191f6b",
+      "parts": [
+        {
+          "path": "representative_states/frame_000234.bin.part000",
+          "bytes": 8388608,
+          "sha256": "d5e9d6e13f8a725a236b4240fdce4b89542e00a3cf8007267840f3dd09043c76"
+        },
+        {
+          "path": "representative_states/frame_000234.bin.part001",
+          "bytes": 5683008,
+          "sha256": "1ecdc1fe1996f6b246c17258b978e83c39c5c1acad49df49dd8f8cb33119bc8f"
+        }
+      ]
+    },
+    {
+      "path": "representative_states/frame_000240.bin",
+      "bytes": 14071616,
+      "sha256": "09685bffbf0fe16fc9749e5e74f0ba7b4311893c86e6e8365db9ba75989d0231",
+      "parts": [
+        {
+          "path": "representative_states/frame_000240.bin.part000",
+          "bytes": 8388608,
+          "sha256": "d928bc216c2777350b1b0006d5769b438fed725ba129c281a8e1f31c389da389"
+        },
+        {
+          "path": "representative_states/frame_000240.bin.part001",
+          "bytes": 5683008,
+          "sha256": "d88c896b898340c3cdc475ab2c6240a994f32ec1e364aab80d51109ae4bbc95e"
+        }
+      ]
+    }
+  ]
+}

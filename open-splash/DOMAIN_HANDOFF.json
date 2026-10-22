@@ -1,0 +1,32 @@
+{
+  "at_frame": 216,
+  "time_s": 9.0,
+  "step_base": 1068,
+  "reason": "Avoid loss of visible fast spray at the open numerical outlet.",
+  "preserved": "Particle positions, velocities, volumes and IDs exactly; secondary positions/velocities/radii/ages/lifetimes/types.",
+  "reconstructed": "APIC affine gradients from transferred snapshot velocities; pressure warm start reset. Not a bitwise checkpoint continuation.",
+  "stage1": {
+    "lower": [
+      -3.3,
+      -0.12,
+      -2.52
+    ],
+    "upper": [
+      3.3,
+      3.3,
+      2.52
+    ]
+  },
+  "stage2": {
+    "lower": [
+      -6.0,
+      -0.12,
+      -5.1
+    ],
+    "upper": [
+      4.02,
+      2.7,
+      7.5
+    ]
+  }
+}

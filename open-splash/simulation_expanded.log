@@ -1,0 +1,26 @@
+Snapshot handoff at 9 s: exact marker p/v/m/IDs; reconstructed APIC gradients; pressure warm start reset.
+Initialized 334x94x420 grid, 439737 markers, 0.439737 m3, in 36.0883 s
+Frame 217 t=9.04167 N=439737 WW=5793 pIter=18 pRel=1.32646e-05 div=2.90885e-05 maxV=6.44616 step=2.81472s total=71.1547s
+Frame 218 t=9.08333 N=439737 WW=6241 pIter=17 pRel=1.4895e-05 div=3.37192e-05 maxV=6.26813 step=2.63018s total=101.134s
+Frame 219 t=9.125 N=439737 WW=6687 pIter=17 pRel=1.80076e-05 div=3.91254e-05 maxV=6.10423 step=2.51222s total=130.819s
+Frame 220 t=9.16667 N=439737 WW=7130 pIter=16 pRel=1.33601e-05 div=2.86156e-05 maxV=5.97852 step=2.56472s total=159.012s
+Frame 221 t=9.20833 N=439737 WW=7562 pIter=16 pRel=1.82971e-05 div=4.36643e-05 maxV=5.89284 step=2.69393s total=189.439s
+Frame 222 t=9.25 N=439737 WW=8023 pIter=19 pRel=1.62697e-05 div=5.0073e-05 maxV=5.85178 step=2.52879s total=217.493s
+Frame 223 t=9.29167 N=439737 WW=8423 pIter=16 pRel=1.9553e-05 div=4.05697e-05 maxV=5.84857 step=2.82606s total=245.118s
+Frame 224 t=9.33333 N=439737 WW=8790 pIter=17 pRel=1.71521e-05 div=4.89196e-05 maxV=5.89534 step=2.74983s total=273.399s
+Frame 225 t=9.375 N=439737 WW=9213 pIter=17 pRel=1.60777e-05 div=3.71417e-05 maxV=7.25872 step=2.31516s total=306.666s
+Frame 226 t=9.41667 N=439737 WW=9680 pIter=18 pRel=1.52043e-05 div=4.05167e-05 maxV=6.38071 step=3.28636s total=349.684s
+Frame 227 t=9.45833 N=439737 WW=10160 pIter=16 pRel=1.80562e-05 div=5.1368e-05 maxV=6.64934 step=2.75487s total=384.777s
+Frame 228 t=9.5 N=439737 WW=10743 pIter=18 pRel=1.83826e-05 div=5.65077e-05 maxV=6.37722 step=2.7317s total=416.916s
+Frame 229 t=9.54167 N=439737 WW=11308 pIter=18 pRel=1.79371e-05 div=6.09396e-05 maxV=6.44014 step=2.97116s total=453.47s
+Frame 230 t=9.58333 N=439737 WW=12041 pIter=19 pRel=1.70903e-05 div=6.17889e-05 maxV=6.60363 step=2.71098s total=487.875s
+Frame 231 t=9.625 N=439737 WW=12701 pIter=20 pRel=1.84697e-05 div=7.54616e-05 maxV=6.5358 step=2.83289s total=521.294s
+Frame 232 t=9.66667 N=439737 WW=13421 pIter=19 pRel=1.37421e-05 div=5.67207e-05 maxV=5.78562 step=2.63892s total=554.954s
+Frame 233 t=9.70833 N=439737 WW=14047 pIter=20 pRel=1.88035e-05 div=7.43151e-05 maxV=5.46642 step=2.63241s total=582.001s
+Frame 234 t=9.75 N=439737 WW=14683 pIter=20 pRel=1.58471e-05 div=7.30375e-05 maxV=5.84768 step=2.68884s total=608.884s
+Frame 235 t=9.79167 N=439737 WW=15306 pIter=23 pRel=1.70851e-05 div=3.21045e-05 maxV=6.24962 step=2.4807s total=637.806s
+Frame 236 t=9.83333 N=439737 WW=15836 pIter=23 pRel=1.62448e-05 div=2.61871e-05 maxV=6.39437 step=2.55348s total=668.241s
+Frame 237 t=9.875 N=439737 WW=16398 pIter=22 pRel=1.75911e-05 div=2.90133e-05 maxV=6.3806 step=2.39678s total=697.968s
+Frame 238 t=9.91667 N=439737 WW=16956 pIter=22 pRel=1.92175e-05 div=3.10101e-05 maxV=6.33899 step=2.48091s total=726.131s
+Frame 239 t=9.95833 N=439737 WW=17485 pIter=21 pRel=1.79072e-05 div=3.02807e-05 maxV=6.30899 step=2.751s total=755.041s
+Frame 240 t=10 N=439737 WW=18063 pIter=23 pRel=1.43894e-05 div=2.49517e-05 maxV=6.20315 step=2.82571s total=783.604s

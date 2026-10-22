@@ -1,0 +1,8 @@
+{
+  "positions_and_velocities_bitwise_identical": true,
+  "max_position_change_m": 0.0,
+  "max_velocity_change_m_s": 0.0,
+  "volumes_bitwise_identical": true,
+  "ids_bitwise_identical": true,
+  "primary_markers": 439737
+}

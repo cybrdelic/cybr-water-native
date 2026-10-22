@@ -1,0 +1,1 @@
+{"passed":true,"normal_water_fresnel":0.02037318423,"white_sphere_mean":1,"beer_sphere_mean":0.455922346,"beer_sphere_analytic":0.4555640221,"nested_air_water":true,"motion_triangle":true,"tiny_closed_tetrahedron":true,"adaptive_origin_sides":true,"near_origin_plane_pair":true,"max_tested_bsdf_energy":0.4780359888}

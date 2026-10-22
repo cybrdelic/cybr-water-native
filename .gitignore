@@ -1,0 +1,28 @@
+# Generated builds and simulation output
+**/build/
+/cache/
+/runs/
+/.venv/
+__pycache__/
+*.pyc
+/current.mesh
+/current_render.*
+/solids.mesh
+/batch_*.mp4
+/frame_*.png
+/CYBR_WATERBENDING_FULL_TRICK_NATIVE_10S_24FPS.mp4
+.DS_Store
+.env
+.env.*
+
+# Retained-trick generated working outputs
+/retained-trick/rendered/
+/retained-trick/CYBR_WATERBENDING_RETAINED_TRICK_10S.mp4
+/retained-trick/production_cache/checkpoint*
+/retained-trick/production_cache/*.ready
+/retained-trick/production_cache/*.tmp
+/baseline.mp4
+
+# Original open-splash snapshots restored from committed transport parts
+/open-splash/handoff_state/*.bin
+/open-splash/representative_states/*.bin

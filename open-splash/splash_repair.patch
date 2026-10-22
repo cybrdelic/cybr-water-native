@@ -1,0 +1,338 @@
+--- a/src/gallery_export.cpp
++++ b/src/gallery_export.cpp
+@@ -169,6 +169,8 @@
+ int main(int argc,char **argv) {
+     try {
+         std::string name="beach",path="output/gallery_beach_static.mesh",sdfPath;
++        Vec3 sdfLower,sdfUpper;bool hasLower=false,hasUpper=false;
++        auto vec=[](std::string q){std::replace(q.begin(),q.end(),',',' ');std::istringstream f(q);Vec3 p;f>>p.x>>p.y>>p.z;if(!f)throw std::runtime_error("Bad SDF bounds");return p;};
+         float quality=1.f,sdfDx=.0125f;
+         for(int i=1;i<argc;i++) {
+             std::string arg=argv[i];
+@@ -177,6 +179,8 @@
+             else if(arg=="--quality"&&i+1<argc)quality=std::stof(argv[++i]);
+             else if(arg=="--sdf-out"&&i+1<argc)sdfPath=argv[++i];
+             else if(arg=="--sdf-dx"&&i+1<argc)sdfDx=std::stof(argv[++i]);
++            else if(arg=="--sdf-lower"&&i+1<argc){sdfLower=vec(argv[++i]);hasLower=true;}
++            else if(arg=="--sdf-upper"&&i+1<argc){sdfUpper=vec(argv[++i]);hasUpper=true;}
+             else throw std::runtime_error("Usage: gallery_export --scene beach|waterbending|drop|whirlpool|rockimpact|jets|cascade --out file.mesh [--quality 1] [--sdf-out solid.sdf --sdf-dx .0125]");
+         }
+         if(!(quality>=.5f&&quality<=4.f))throw std::runtime_error("Quality spacing scale must be in [.5,4]");
+@@ -187,7 +191,7 @@
+         ground(writer,*preset.geometry,quality,preset.geometryScale);
+         for(const auto &shape:preset.geometry->rocks)rock(writer,*preset.geometry,shape,quality);
+         writer.finish();
+-        if(!sdfPath.empty())sampledSolid(preset,sdfPath,sdfDx);
++        if(!sdfPath.empty()){if(hasLower)preset.scene.lower=sdfLower;if(hasUpper)preset.scene.upper=sdfUpper;sampledSolid(preset,sdfPath,sdfDx);}
+         std::cout<<std::setprecision(9)
+                  <<"{\"scene\":\""<<preset.scene.name<<"\",\"triangles\":"<<writer.triangles
+                  <<",\"ground_triangles\":"<<writer.bedTriangles<<",\"rock_triangles\":"<<writer.rockTriangles
+--- a/src/gallery_scenes.hpp
++++ b/src/gallery_scenes.hpp
+@@ -635,11 +635,12 @@
+ 
+ inline Preset waterbendingTrickPreset() {
+     Preset preset=waterbendingPreset();auto &s=preset.scene;
+-    s.name="retained_feedback_waterbending_trick";
+-    // The visible raised bed confines the pool. Domain boundaries are closed
+-    // below/at the sides only as a safety backstop; all outflow is still logged.
+-    s.lower={-1.8f,-.12f,-1.10f};s.upper={1.8f,3.30f,1.10f};
+-    s.closedBoundaries={true,true,true,false,true,true};
++    s.name="open_splash_feedback_waterbending_trick";
++    // Real bed/rocks are the only lateral collision geometry. The larger
++    // computational window is OPEN laterally; escaped mass is accounted.
++    // Camera framing does not impose a physical wall.
++    s.lower={-3.30f,-.12f,-2.52f};s.upper={3.30f,3.30f,2.52f};
++    s.closedBoundaries={false,false,true,false,false,false};
+     s.initialLiquidSdf=[](Vec3 p){
+         float r=std::sqrt((p.x/.95f)*(p.x/.95f)+(p.z/.72f)*(p.z/.72f));
+         return std::max({p.y-.285f,-.11f-p.y,r-.98f});
+--- a/src/gallery_simulate.cpp
++++ b/src/gallery_simulate.cpp
+@@ -19,14 +19,61 @@
+     auto &v=s.stats;size_t counts[3]={};for(auto &w:s.white)counts[std::min<uint32_t>(w.type,2)]++;
+     f<<std::setprecision(12)<<v.steps<<','<<s.time<<','<<v.dt<<','<<s.particles.size()<<','<<counts[0]<<','<<counts[1]<<','<<counts[2]<<','<<v.fluidCells<<','<<v.volume<<','<<v.initialVolume<<','<<v.emittedVolume<<','<<v.outflowVolume<<','<<v.massLedgerError<<','<<v.kineticEnergy<<','<<v.maxSpeed<<','<<v.pressureIterations<<','<<v.pressureRelativeResidual<<','<<v.pressureAbsoluteResidual<<','<<v.divergenceBeforeL2<<','<<v.divergenceAfterL2<<','<<v.divergenceAfterMax<<','<<v.initialParticles<<','<<v.emittedParticles<<','<<v.outflowParticles<<','<<v.splitParticles<<','<<v.mergedParticles<<','<<v.whiteEmitted<<','<<v.whiteExpired<<','<<v.whiteRejected<<','<<v.collisionProjections<<','<<v.transferSeconds<<','<<v.pressureSeconds<<','<<v.advectionSeconds<<','<<v.secondarySeconds<<','<<v.stepSeconds<<','<<v.inletAttempts<<','<<v.inletRejectedAttempts<<','<<v.requestedInletVolume<<','<<v.prescribedInletVolume<<'\n';f.flush();
+ }
++
++static Vec3 parseVector(std::string value) {
++    std::replace(value.begin(),value.end(),',',' ');std::istringstream f(value);Vec3 p;f>>p.x>>p.y>>p.z;
++    if(!f||!finite(p))throw std::runtime_error("Invalid domain vector");return p;
++}
++static void importSnapshot(Solver &solver,const std::filesystem::path &path,uint64_t stepBase) {
++    struct H {char magic[8];uint32_t version,count,frame;float time,spacing,h;};static_assert(sizeof(H)==32);
++    std::ifstream f(path,std::ios::binary);H h{};f.read(reinterpret_cast<char*>(&h),sizeof(h));
++    if(!f||std::memcmp(h.magic,"CYBRWTR1",8)||h.version!=1||h.count>solver.config.maxParticles)throw std::runtime_error("Invalid handoff snapshot");
++    if(std::abs(h.spacing-solver.config.dx/solver.config.particlesPerAxis)>1e-7f)throw std::runtime_error("Handoff changes marker scale");
++    auto base=path;base.replace_extension();std::ifstream ids(base.string()+".ids",std::ios::binary),vol(base.string()+".volumes",std::ios::binary);
++    solver.particles.resize(h.count);solver.nextParticleId=1;
++    double beforeVolume=0;Vec3 beforeMomentum{};
++    for(auto &p:solver.particles){
++        float q[8];uint32_t id;f.read(reinterpret_cast<char*>(q),sizeof(q));ids.read(reinterpret_cast<char*>(&id),4);vol.read(reinterpret_cast<char*>(&p.volume),4);
++        if(!f||!ids||!vol||!(p.volume>0))throw std::runtime_error("Truncated handoff");
++        p.p={q[0],q[1],q[2]};p.v={q[3],q[4],q[5]};p.id=id;p.C.fill(0);
++        if(!finite(p.p)||!finite(p.v)||solver.outside(p.p))throw std::runtime_error("Handoff particle outside enlarged domain");
++        solver.nextParticleId=std::max(solver.nextParticleId,p.id+1);beforeVolume+=p.volume;beforeMomentum+=p.v*p.volume;
++    }
++    // The display snapshot contains exact positions, velocities, volumes and IDs,
++    // but not the APIC affine state. Reconstruct gradients from the transferred
++    // local velocity field; NEVER claim this is a bitwise checkpoint restart.
++    solver.transferToGrid();
++    #pragma omp parallel for schedule(static)
++    for(size_t i=0;i<solver.particles.size();i++){
++        Vec3 unused;solver.gatherAffine(solver.particles[i].p,unused,solver.particles[i].C);
++    }
++    solver.white.clear();solver.nextWhiteId=1;
++    std::ifstream w(base.string()+".white",std::ios::binary);H wh{};w.read(reinterpret_cast<char*>(&wh),sizeof(wh));
++    if(!w||std::memcmp(wh.magic,"CYBRWW01",8)||wh.version!=1)throw std::runtime_error("Invalid handoff secondary state");
++    for(uint32_t j=0;j<wh.count;j++){
++        float q[9];uint32_t type;w.read(reinterpret_cast<char*>(q),sizeof(q));w.read(reinterpret_cast<char*>(&type),4);
++        if(!w||type>2)throw std::runtime_error("Truncated handoff secondary state");WhiteParticle p;
++        p.p={q[0],q[1],q[2]};p.v={q[3],q[4],q[5]};p.radius=q[6];p.age=q[7];p.lifetime=q[8];p.type=type;p.id=solver.nextWhiteId++;
++        solver.white.push_back(p);
++    }
++    solver.time=h.time;solver.lastDt=0;solver.stats=Statistics{};solver.stats.steps=stepBase;
++    solver.stats.initialParticles=solver.particles.size();solver.stats.initialVolume=beforeVolume;
++    solver.stats.whiteEmitted=solver.white.size();solver.transferToGrid();solver.updateStatistics();
++    if(solver.particleVolume()!=beforeVolume)throw std::runtime_error("Handoff changed liquid volume");
++    std::cout<<"Snapshot handoff at "<<solver.time<<" s: exact marker p/v/m/IDs; reconstructed APIC gradients; pressure warm start reset."<<std::endl;
++}
++
+ int main(int argc,char **argv){
+     try{
+         Config c;double duration=1,fps=24;int saveEvery=1,stopFrame=-1;bool stream=false,skipInitial=false,noCache=false;std::string sceneName="beach";
+         float lowerY=std::numeric_limits<float>::quiet_NaN(),upperY=lowerY;
+-        std::filesystem::path out="water-vfx/cache_gallery",checkpoint,resume;
++        std::filesystem::path out="water-vfx/cache_gallery",checkpoint,resume,importFrame;uint64_t startStep=0;
++        Vec3 domainLower,domainUpper;bool haveLower=false,haveUpper=false;
+         for(int i=1;i<argc;i++){
+             std::string a=argv[i];auto value=[&](){if(i+1>=argc)throw std::runtime_error("Missing value for "+a);return std::string(argv[++i]);};
+             if(a=="--scene")sceneName=value();else if(a=="--dx")c.dx=std::stof(value());else if(a=="--duration")duration=std::stod(value());else if(a=="--fps")fps=std::stod(value());else if(a=="--threads")c.threads=std::stoi(value());
++            else if(a=="--import-frame")importFrame=value();else if(a=="--start-step")startStep=std::stoull(value());
++            else if(a=="--domain-lower"){domainLower=parseVector(value());haveLower=true;}else if(a=="--domain-upper"){domainUpper=parseVector(value());haveUpper=true;}
+             else if(a=="--out")out=value();else if(a=="--checkpoint")checkpoint=value();else if(a=="--resume")resume=value();else if(a=="--save-every")saveEvery=std::stoi(value());else if(a=="--stop-after-frame")stopFrame=std::stoi(value());
+             else if(a=="--flip")c.flipRatio=std::stof(value());else if(a=="--cfl")c.cfl=std::stof(value());else if(a=="--pressure-iterations")c.pressureIterations=std::stoi(value());else if(a=="--pressure-tolerance")c.pressureTolerance=std::stof(value());
+             else if(a=="--whitewater-rate")c.whitewaterRate=std::stof(value());else if(a=="--max-whitewater")c.maxWhitewater=std::stoull(value());else if(a=="--max-particles")c.maxParticles=std::stoull(value());else if(a=="--seed")c.seed=std::stoull(value());
+@@ -40,10 +87,11 @@
+         c.buildSignature=executableSignature(std::filesystem::exists("/proc/self/exe")?std::filesystem::path("/proc/self/exe"):std::filesystem::path(argv[0]));
+         std::filesystem::create_directories(out);if(checkpoint.empty())checkpoint=out/"checkpoint.bin";
+         auto preset=gallery::makePreset(sceneName);Scene scene=preset.scene;
++        if(haveLower)scene.lower=domainLower;if(haveUpper)scene.upper=domainUpper;
+         if(std::isfinite(lowerY))scene.lower.y=lowerY;if(std::isfinite(upperY))scene.upper.y=upperY;
+         if(scene.upper.y-scene.lower.y<c.dx*4)throw std::runtime_error("Invalid vertical domain crop");
+         auto start=std::chrono::steady_clock::now();Solver solver(scene,c);
+-        if(resume.empty())solver.initialize();else solver.loadCheckpoint(resume);
++        if(!importFrame.empty())importSnapshot(solver,importFrame,startStep);else if(resume.empty())solver.initialize();else solver.loadCheckpoint(resume);
+         metadata(solver,out,fps,duration);
+         {
+             std::ofstream f(out/"gallery_scene.json");
+@@ -59,11 +107,13 @@
+             for(size_t i=0;i<scene.closedBoundaries.size();i++){if(i)f<<',';f<<(scene.closedBoundaries[i]?"true":"false");}
+             f<<"],\"implementation\":\"Common Solver zero-normal MAC flux and frictionless marker contact\"}\n";
+         }
+-        bool append=!resume.empty()&&std::filesystem::exists(out/"diagnostics.csv");
++        bool append=(!resume.empty()||!importFrame.empty())&&std::filesystem::exists(out/"diagnostics.csv");
+         std::ofstream diagnostics(out/"diagnostics.csv",append?std::ios::app:std::ios::out);if(!append)csvHeader(diagnostics);csvRecord(diagnostics,solver);
+         std::cout<<"Initialized "<<solver.nx<<'x'<<solver.ny<<'x'<<solver.nz<<" grid, "<<solver.particles.size()<<" markers, "<<solver.stats.volume<<" m3, in "<<Solver::seconds(start)<<" s"<<std::endl;
+-        std::ofstream retained(out/"retention.csv");
+-        retained<<"frame,time,particles,volume,initial_volume,outflow_volume,emitted_volume,elevated_05,elevated_08,elevated_11,max_y,max_speed,guide_volume,guide_distance_mean\n";
++        std::ofstream domain(out/"domain_audit.csv",append?std::ios::app:std::ios::out);
++        if(!append)domain<<"frame,time,min_lateral_clearance,within_1cm,within_2cells,volume,kinetic_energy,gravitational_energy,max_speed,primary_count,whitewater_count\n";
++        std::ofstream retained(out/"retention.csv",append?std::ios::app:std::ios::out);
++        if(!append)retained<<"frame,time,particles,volume,initial_volume,outflow_volume,emitted_volume,elevated_05,elevated_08,elevated_11,max_y,max_speed,guide_volume,guide_distance_mean\n";
+         auto save=[&](int frame){
+             double e05=0,e08=0,e11=0,gv=0,dist=0;float ymax=-1e9;
+             gallery::RetainedTrickGuide control;control.prepare(solver.time);
+@@ -72,7 +122,14 @@
+                 ymax=std::max(ymax,p.p.y);
+                 if(p.p.y>.45f){float d=std::sqrt(control.closest(p.p).d2);dist+=d*p.volume;gv+=p.volume;}
+             }
++            float clearance=1e9f;uint64_t near1=0,near2=0;double potential=0;
++            for(const auto &p:solver.particles){
++                float d=std::min({p.p.x-solver.scene.lower.x,solver.scene.upper.x-p.p.x,p.p.z-solver.scene.lower.z,solver.scene.upper.z-p.p.z});
++                clearance=std::min(clearance,d);near1+=d<.01f;near2+=d<2*solver.config.dx;
++                potential+=solver.config.density*p.volume*9.81*p.p.y;
++            }
+             const auto &st=solver.stats;
++            domain<<std::setprecision(12)<<frame<<','<<solver.time<<','<<clearance<<','<<near1<<','<<near2<<','<<st.volume<<','<<st.kineticEnergy<<','<<potential<<','<<st.maxSpeed<<','<<solver.particles.size()<<','<<solver.white.size()<<'\n';domain.flush();
+             retained<<std::setprecision(12)<<frame<<','<<solver.time<<','<<solver.particles.size()<<','<<st.volume<<','<<st.initialVolume<<','<<st.outflowVolume<<','<<st.emittedVolume<<','<<e05<<','<<e08<<','<<e11<<','<<ymax<<','<<st.maxSpeed<<','<<gv<<','<<(gv?dist/gv:0)<<'\n';retained.flush();
+             if(noCache)return;
+             solver.writeFrame(out,uint32_t(frame));solver.saveCheckpoint(checkpoint);
+--- a/src/surface.cpp
++++ b/src/surface.cpp
+@@ -96,6 +96,18 @@
+     float particleSpacing;
+     Options opt;
+     std::vector<float> volumes;
++    // Optional persistent liquid/drop classification, keyed by actual marker ID.
++    // A sparse ligament does not become separate spheres merely because it has
++    // fewer than four neighbours. Different separation/rejoin thresholds avoid
++    // the original one-frame switch at the neighbour-count cutoff.
++    std::vector<uint32_t> ids;
++    std::vector<uint8_t> previousPhase;
++    bool coherentFragments=false;
++    static bool detached(float nearestSquared,float spacing,uint8_t previous) {
++        float threshold=previous==1?2.20f:(previous==0?3.20f:2.70f);
++        return nearestSquared>sq(threshold*spacing);
++    }
++
+     Reconstruction(float d,Options o):particleSpacing(d),opt(o){}
+     struct Anisotropy {
+         float xx=1,xy=0,xz=0,yy=1,yz=0,zz=1;
+@@ -126,7 +138,7 @@
+         for(int i=0;i<int(s.particles.size());i++){
+             const auto &p=s.particles[i];V3 pos(p.x,p.y,p.z),q=(pos-lo)*inverseCell;
+             int cx=int(q.x),cy=int(q.y),cz=int(q.z),neighbors=0;
+-            float weight=0,mx=0,my=0,mz=0,xx=0,xy=0,xz=0,yy=0,yz=0,zz=0;
++            float weight=0,mx=0,my=0,mz=0,xx=0,xy=0,xz=0,yy=0,yz=0,zz=0,nearestSquared=INF;
+             for(int z=std::max(0,cz-1);z<=std::min(nz-1,cz+1);z++)
+                 for(int y=std::max(0,cy-1);y<=std::min(ny-1,cy+1);y++)
+                     for(int x=std::max(0,cx-1);x<=std::min(nx-1,cx+1);x++)
+@@ -135,9 +147,14 @@
+                             float k=1.f-dot(d,d)*inverseRadius2;if(k<=0)continue;
+                             float w=k*k*k;weight+=w;mx+=w*d.x;my+=w*d.y;mz+=w*d.z;
+                             xx+=w*d.x*d.x;xy+=w*d.x*d.y;xz+=w*d.x*d.z;yy+=w*d.y*d.y;yz+=w*d.y*d.z;zz+=w*d.z*d.z;
+-                            if(j!=uint32_t(i))neighbors++;
++                            if(j!=uint32_t(i)){neighbors++;nearestSquared=std::min(nearestSquared,dot(d,d));}
+                         }
+             Anisotropy metric;metric.bound=V3(particleSpacing*opt.supportScale);metric.droplet=neighbors<=3;
++            if(coherentFragments){
++                uint8_t old=255;
++                if(size_t(i)<ids.size()&&ids[i]<previousPhase.size())old=previousPhase[ids[i]];
++                metric.droplet=detached(nearestSquared,particleSpacing,old);
++            }
+             if(neighbors<5||weight<.001f){particleMetrics[i]=metric;continue;}
+             float iw=1.f/weight;mx*=iw;my*=iw;mz*=iw;
+             float a[3][3]={{xx*iw-mx*mx,xy*iw-mx*my,xz*iw-mx*mz},
+@@ -399,7 +416,7 @@
+ int main(int argc,char **argv){
+     using namespace water;
+     try{
+-        std::string input,out="water.mesh",obj,spheres,solidPath;
++        std::string input,out="water.mesh",obj,spheres,solidPath,phaseIn,phaseOut;bool coherentFragments=false;
+         Options options;int threads=4;bool correctVolume=true;float maxOffsetScale=.5f,contactPadding=.0003f;
+         for(int i=1;i<argc;i++){
+             std::string a=argv[i];auto next=[&](){if(i+1>=argc)throw std::runtime_error("Missing value for "+a);return std::string(argv[++i]);};
+@@ -407,6 +424,8 @@
+             else if(a=="--spheres")spheres=next();else if(a=="--surface-scale")options.surfaceScale=std::stof(next());
+             else if(a=="--support")options.supportScale=std::stof(next());else if(a=="--smooth")options.smooth=std::stoi(next());
+             else if(a=="--threads")threads=std::stoi(next());
++            else if(a=="--coherent-fragments")coherentFragments=true;
++            else if(a=="--phase-in")phaseIn=next();else if(a=="--phase-out")phaseOut=next();
+             else if(a=="--solid-field")solidPath=next();else if(a=="--no-volume-correction")correctVolume=false;
+             else if(a=="--max-iso-offset")maxOffsetScale=std::stof(next());else if(a=="--contact-padding")contactPadding=std::stof(next());
+             else throw std::runtime_error("Unknown option "+a);
+@@ -418,6 +437,24 @@
+         std::filesystem::path base(input);base.replace_extension();
+         std::ifstream v(base.string()+".volumes",std::ios::binary);
+         if(v){r.volumes.resize(s.particles.size());v.read(reinterpret_cast<char*>(r.volumes.data()),r.volumes.size()*sizeof(float));if(!v)throw std::runtime_error("Truncated volume companion");}
++        r.coherentFragments=coherentFragments;
++        if(coherentFragments){
++            std::ifstream idfile(base.string()+".ids",std::ios::binary);
++            if(!idfile)throw std::runtime_error("Coherent fragments require stable marker IDs");
++            r.ids.resize(s.particles.size());idfile.read(reinterpret_cast<char*>(r.ids.data()),r.ids.size()*4);
++            if(!idfile)throw std::runtime_error("Truncated marker IDs");
++            if(!phaseIn.empty()){
++                std::ifstream pf(phaseIn,std::ios::binary);char magic[8];uint32_t count=0;
++                pf.read(magic,8);pf.read(reinterpret_cast<char*>(&count),4);
++                if(!pf||std::memcmp(magic,"CYBRPH01",8)||count>10000000)throw std::runtime_error("Invalid prior fragment phase");
++                for(uint32_t j=0;j<count;j++){
++                    uint32_t id;uint8_t phase;pf.read(reinterpret_cast<char*>(&id),4);pf.read(reinterpret_cast<char*>(&phase),1);
++                    if(!pf||id>10000000||phase>1)throw std::runtime_error("Bad fragment phase record");
++                    if(r.previousPhase.size()<=id)r.previousPhase.resize(size_t(id)+1,255);
++                    r.previousPhase[id]=phase;
++                }
++            }
++        }
+         r.measureAnisotropy(s);auto grid=r.buildImplicit(s);
+         if(!solidPath.empty()){
+             SolidGrid solid;solid.read(solidPath);grid.solidConstraint.resize(grid.phi.size());
+@@ -486,11 +523,24 @@
+             }
+             if(!w)throw std::runtime_error("Spheres write failed");
+         }
++        uint64_t phaseChanges=0;
++        if(coherentFragments&&!phaseOut.empty()){
++            std::ofstream pf(phaseOut+".tmp",std::ios::binary);pf.write("CYBRPH01",8);
++            uint32_t count=uint32_t(r.ids.size());pf.write(reinterpret_cast<char*>(&count),4);
++            for(size_t i=0;i<r.ids.size();i++){
++                uint32_t id=r.ids[i];uint8_t phase=r.particleMetrics[i].droplet?1:0;
++                if(id<r.previousPhase.size()&&r.previousPhase[id]<2&&r.previousPhase[id]!=phase)phaseChanges++;
++                pf.write(reinterpret_cast<char*>(&id),4);pf.write(reinterpret_cast<char*>(&phase),1);
++            }
++            pf.close();if(!pf)throw std::runtime_error("Failed fragment phase write");
++            std::filesystem::rename(phaseOut+".tmp",phaseOut);
++        }
+         double seconds=std::chrono::duration<double>(std::chrono::steady_clock::now()-started).count();
+         std::ofstream report(out+".json");
+         double guard=grid.endpointGuard(),ulp=grid.coordinateUlp();
+         double endpointBound=std::sqrt(3.)*(guard*(double(grid.step)+2*ulp)+2*ulp);
+         report<<std::setprecision(10)<<"{\n  \"mesh_volume_arithmetic\": \"Float64 cross/dot with parallel double reduction on stored float32 vertices.\",\n  \"edge_endpoint_guard_fraction\": "<<guard<<",\n  \"edge_endpoint_guard_displacement_bound_m\": "<<endpointBound<<",\n  \"edge_endpoint_guard_scope\": \"Canonical edge interpolation uses eight float32 coordinate steps. Bound applies at fixed sampled field and isovalue; volume correction may change the selected isovalue. Valid tiny faces are retained; any remaining exact zero-area face aborts reconstruction.\",\n";
++        report<<"  \"coherent_fragment_hysteresis\": "<<(coherentFragments?"true":"false")<<",\n  \"fragment_phase_changes\": "<<phaseChanges<<",\n";
+         report<<std::setprecision(10)<<"  \"frame\": "<<s.header.frame<<",\n  \"time_s\": "<<s.header.time<<",\n  \"primary_markers\": "<<s.particles.size()<<",\n  \"nominal_marker_spacing_m\": "<<s.header.spacing<<",\n  \"surface_voxel_m\": "<<grid.step<<",\n  \"support_markers\": "<<options.supportScale<<",\n  \"scalar_smoothing_passes\": "<<options.smooth<<",\n  \"triangles\": "<<mesh.size()<<",\n  \"mesh_signed_volume_m3\": "<<signedVolume<<",\n  \"uncorrected_mesh_volume_m3\": "<<uncorrectedVolume<<",\n  \"dense_marker_target_volume_m3\": "<<denseVolume<<",\n  \"volume_correction_iso_m\": "<<iso<<",\n  \"volume_correction_iterations\": "<<volumeIterations<<",\n  \"solid_constraint\": "<<(solidPath.empty()?"false":"true")<<",\n  \"solid_contact_padding_m\": "<<contactPadding<<",\n  \"primary_volume_m3\": "<<primaryVolume<<",\n  \"isolated_primary_spheres\": "<<primaryDrops<<",\n  \"secondary_visual_parcels\": "<<secondaryCount<<",\n  \"secondary_mass_note\": \"Whitewater parcels sample common liquid flow; primary marker volume is retained, not reassigned to secondary particles.\",\n  \"bounds\": [["<<lo.x<<','<<lo.y<<','<<lo.z<<"],["<<hi.x<<','<<hi.y<<','<<hi.z<<"]],\n  \"seconds\": "<<seconds<<"\n}\n";
+         std::cerr<<" primary_drops "<<primaryDrops<<" secondary "<<secondaryCount<<" seconds "<<seconds<<'\n';
+         return 0;
+--- /dev/null
++++ b/tests/fragment_phase_checks.cpp
+@@ -0,0 +1,27 @@
++#define main surface_program_main
++#include "../src/surface.cpp"
++#undef main
++#include <stdexcept>
++static void require(bool x,const char*m){if(!x)throw std::runtime_error(m);}
++int main(){try{
++ using R=water::Reconstruction;float d=.01f;
++ require(!R::detached(2.7f*2.7f*d*d,d,0),"Liquid separates inside deadband");
++ require(R::detached(2.7f*2.7f*d*d,d,1),"Drop switches inside deadband");
++ require(R::detached(3.3f*3.3f*d*d,d,0),"Separated drop stays a sheet");
++ require(!R::detached(2.1f*2.1f*d*d,d,1),"Drop cannot rejoin");
++ for(int i=0;i<50;i++)for(uint8_t prior:{uint8_t(0),uint8_t(1)}){
++  float distance=.001f*i;auto next=R::detached(distance*distance,d,prior);
++  require(R::detached(distance*distance,d,uint8_t(next))==next,"Classifier not idempotent at restart");
++ }
++ water::Snapshot s{};s.header.spacing=d;s.header.count=3;
++ for(int i=0;i<3;i++)s.particles.push_back({float(i)*d,0,0,0,0,0,1,0});
++ R r(d,water::Options{});r.coherentFragments=true;r.ids={0,1,2};r.previousPhase={0,0,0};r.measureAnisotropy(s);
++ for(auto &m:r.particleMetrics)require(!m.droplet,"Sparse continuous ligament turned into three spheres");
++ R old(d,water::Options{});old.measureAnisotropy(s);for(auto &m:old.particleMetrics)require(m.droplet,"Regression negative control failed");
++ // Spatially isolated samples still have an explicit liquid-volume owner.
++ s.particles[2].x=.5f;r.measureAnisotropy(s);require(r.particleMetrics[2].droplet,"Far separated liquid not recognized");
++ double v=d*d*d,rad=std::cbrt(3*v/(4*water::PI));
++ require(std::abs(4*water::PI*rad*rad*rad/3-v)<1e-15,"Drop radius loses liquid volume");
++ std::cout<<"{\"passed\":true,\"hysteresis_enter_spacing\":3.2,\"hysteresis_exit_spacing\":2.2,\"sparse_ligament_preserved\":true,\"same_state_restart_idempotent\":true,\"old_count_cutoff_negative_control\":true,\"isolated_volume_preserved\":true}\n";
++ return 0;
++}catch(const std::exception&e){std::cerr<<e.what()<<'\n';return 1;}}
+--- /dev/null
++++ b/tests/splash_boundary_checks.cpp
+@@ -0,0 +1,32 @@
++#include "../src/gallery_scenes.hpp"
++#include <iostream>
++#include <stdexcept>
++using namespace water;
++static void require(bool x,const char* m){if(!x)throw std::runtime_error(m);}
++int main(){try{
++ auto p=gallery::waterbendingTrickPreset();auto s=p.scene;
++ require(!s.closedBoundaries[0]&&!s.closedBoundaries[1]&&!s.closedBoundaries[4]&&!s.closedBoundaries[5],"Hidden lateral wall still enabled");
++ require(s.closedBoundaries[2]&&!s.closedBoundaries[3],"Incorrect bottom/top boundary");
++ require(s.lower.x<=-3.29f&&s.upper.x>=3.29f&&s.lower.z<=-2.51f&&s.upper.z>=2.51f,"Splash domain not enlarged");
++ require(s.inlets.empty(),"New water created by inlet");
++ Config c;c.dx=.3f;c.threads=1;c.whitewater=false;c.apic=true;
++ Solver solver(s,c);
++ // A marker outside an open lateral face must not be clamped/rebounded.
++ Vec3 pos(s.upper.x+.04f,.8f,0),vel(2,0,0);solver.projectSolid(pos,vel,.001f);
++ require(pos.x>s.upper.x&&vel.x==2.f,"Invisible open-face collision");
++ require(solver.outside(pos),"Open outflow cannot be accounted");
++ Scene closed=s;closed.closedBoundaries[0]=closed.closedBoundaries[1]=closed.closedBoundaries[4]=closed.closedBoundaries[5]=true;
++ Solver old(closed,c);Vec3 oldp(closed.upper.x+.04f,.8f,0),oldv(2,0,.4f);old.projectSolid(oldp,oldv,.001f);
++ require(oldp.x<old.scene.upper.x&&oldv.x==0.f&&oldv.z==.4f,"Old closed-wall negative control failed");
++ // Same controller remains zero after the intended release.
++ gallery::RetainedTrickGuide g;float maxAfter=0;
++ for(double t:{8.55,8.75,9.0,9.75,10.0}){
++  g.prepare(t);for(int i=0;i<20;i++){
++   auto q=g.sample(Vec3(-1.f+.1f*i,.9f,0),t);
++   maxAfter=std::max(maxAfter,length(q.acceleration)+q.rate);
++  }
++ }
++ require(maxAfter==0,"Guidance active during free splashdown");
++ std::cout<<"{\"passed\":true,\"lateral_faces_open\":true,\"open_marker_not_clamped\":true,\"open_outflow_recognized\":true,\"old_wall_negative_control\":true,\"inlet_count\":0,\"max_post_release_guidance\":"<<maxAfter<<"}\n";
++ return 0;
++}catch(const std::exception&e){std::cerr<<e.what()<<'\n';return 1;}}

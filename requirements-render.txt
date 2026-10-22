@@ -1,0 +1,4 @@
+# Optional video helpers only. Native engine has no Python dependency.
+# Versions were not pinned in the source delivery.
+numpy
+opencv-python

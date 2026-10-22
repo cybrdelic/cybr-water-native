@@ -1,0 +1,510 @@
+--- a/src/fluid.hpp
++++ b/src/fluid.hpp
+@@ -54,11 +54,20 @@
+     int axis=0, direction=1;
+     float rateScale=1;
+ };
++// Optional art-direction input. It acts on MAC faces BEFORE pressure projection.
++// It never changes marker positions, creates water, or bypasses incompressibility.
++struct VelocityGuide {
++    Vec3 target{}, acceleration{};
++    float rate=0, accelerationLimit=50;
++};
+ struct Scene {
+     Vec3 lower{-1.8f,-.35f,-1.2f},upper{1.8f,2.05f,1.2f};
+     std::function<float(Vec3)> solidSdf,initialLiquidSdf;
+     std::function<Vec3(Vec3)> initialVelocity;
+     std::function<Vec3(Vec3,double)> bodyAcceleration;
++    std::function<void(double)> prepareForces;
++    std::function<VelocityGuide(Vec3,double)> velocityGuide;
++    float extraAccelerationBound=0;
+     std::vector<Inlet> inlets;
+     // x-low, x-high, y-low, y-high, z-low, z-high. Closed faces are
+     // stationary frictionless walls; omitted/default faces permit outflow.
+@@ -422,7 +431,17 @@
+                 size_t n=f.value.index(x,y,z);if(!f.valid[n]||f.fixed[n]||f.open.a[n]<=0)continue;
+                 Vec3 p=scene.lower+(Vec3(float(x),float(y),float(z))+f.offset)*config.dx;
+                 float accel=config.gravity[a];if(scene.bodyAcceleration)accel+=scene.bodyAcceleration(p,time)[a];
+-                f.value.a[n]+=dt*accel;
++                float change=dt*accel;
++                if(scene.velocityGuide) {
++                    const VelocityGuide q=scene.velocityGuide(p,time);
++                    // Exponential feedback: a requested SPEED is not repeatedly
++                    // added as acceleration. Stable under changes of substep size.
++                    const float alpha=-std::expm1(-std::max(0.f,q.rate)*dt);
++                    float drive=(q.target[a]-f.value.a[n])*alpha+dt*q.acceleration[a];
++                    drive=clamp(drive,-q.accelerationLimit*dt,q.accelerationLimit*dt);
++                    change+=drive;
++                }
++                f.value.a[n]+=change;
+             }
+         }
+     }
+@@ -767,12 +786,15 @@
+         for(const auto &in:scene.inlets)vmax=std::max(vmax,length(in.velocity));
+         double gravity=length(config.gravity),h=config.dx;
+         double dt=config.cfl*h/(vmax+std::sqrt(std::max(0.0,gravity*h))+1e-6);
++        if(scene.extraAccelerationBound>0)
++            dt=std::min(dt,.55*std::sqrt(h/scene.extraAccelerationBound));
+         return std::min(remaining,std::min(.025,dt));
+     }
+     void step(float dt) {
+         if(!(dt>0))throw std::runtime_error("Nonpositive time step");
+         auto start=std::chrono::steady_clock::now(),phase=start;
+         emit(dt);transferToGrid();stats.transferSeconds=seconds(phase);phase=std::chrono::steady_clock::now();
++        if(scene.prepareForces)scene.prepareForces(time);
+         addForces(dt);pressureSolve(dt);stats.pressureSeconds=seconds(phase);phase=std::chrono::steady_clock::now();
+         moveParticles(dt);if(config.reseedInterval>0&&(stats.steps+1)%config.reseedInterval==0)reseed();
+         stats.advectionSeconds=seconds(phase);phase=std::chrono::steady_clock::now();
+--- a/src/gallery_scenes.hpp
++++ b/src/gallery_scenes.hpp
+@@ -415,7 +415,251 @@
+     return preset;
+ }
+ 
++
++// Full ten-second choreography: guidance is a body acceleration on the fluid,
++// not render geometry. All transported liquid, pressure, contacts, and breakup
++// remain owned by the common MAC/APIC solver.
++struct LegacyTrickGuide {
++    struct Strength { float attraction, flow, curl, lift, cap; };
++    static float phase(float t,float a,float b){return smooth(a,b,t);}
++    static float bell(float t,float a,float b,float c,float d){return phase(t,a,b)*(1-phase(t,c,d));}
++    static Vec3 curve(int branch,float u,float t){
++        float side=branch==0?-1.f:1.f;
++        float split=phase(t,1.1f,2.7f);
++        float helix=bell(t,2.5f,3.0f,4.45f,5.0f);
++        float whip=bell(t,4.4f,4.9f,5.95f,6.3f);
++        float ring=phase(t,6.05f,6.6f)*(1-phase(t,7.5f,8.0f));
++        float y=.19f+1.15f*u;
++        float spread=side*(.15f+.33f*u*split);
++        Vec3 gather{spread+side*.08f*std::sin(3.141593f*u),y,
++                    side*(.09f*u+.06f*std::sin(3.141593f*u))};
++        float theta=2.0f*3.1415926536f*(1.35f*u+.65f*phase(t,2.6f,4.6f))+(branch?3.141593f:0.f);
++        Vec3 crossCurve{.33f*std::cos(theta)*u,y,
++                        .27f*std::sin(theta)*u};
++        float q=phase(t,4.6f,6.1f);
++        Vec3 whipCurve{-.08f+1.35f*u*q,.30f+(.95f-.22f*q)*std::sin(1.57f*u),
++                       side*.12f*u+.13f*std::sin(5.f*u+q*3.14f)};
++        float phi=3.1415926536f*(-.5f+1.85f*u)+.30f*side;
++        Vec3 ringCurve{.46f*std::cos(phi),.83f+.50f*std::sin(phi),
++                       .14f*std::sin(phi)+.09f*side};
++        Vec3 out=gather*(1-helix)+crossCurve*helix;
++        if(branch==0)out=out*(1-whip)+whipCurve*whip;
++        out=out*(1-ring)+ringCurve*ring;
++        return out;
++    }
++    // Evaluate closest points on line segments, not isolated guide knots.
++    // This avoids discontinuous acceleration as a particle crosses between knots.
++    // A finite-volume velocity guide: the Eulerian body force steers the *fluid*,
++    // not its rendered surface. Each branch transports along its centerline;
++    // root capture supplies upward momentum, while the collapsing phase is free.
++    Vec3 acceleration(Vec3 p,double seconds) const {
++        float t=float(seconds);
++        float on=smooth(0.f,.45f,t);
++        float off=1.f-smooth(7.7f,9.5f,t);
++        if(on*off<1e-5f || p.y<.07f || p.y>1.95f ||
++           std::abs(p.x)>1.86f || std::abs(p.z)>1.10f) return {0,0,0};
++        float helicity=bell(t,2.5f,2.9f,4.3f,4.9f);
++        float whip=bell(t,4.5f,4.9f,5.9f,6.4f);
++        float ring=bell(t,6.0f,6.5f,7.45f,8.0f);
++        Vec3 bestGoal{},bestTangent{}; float bestU=0, bestDist2=1e20f;
++        const int N=48;
++        for(int branch=0;branch<2;branch++) {
++            float activity=branch==1 ? (1.f-.5f*whip) : 1.f;
++            Vec3 a=curve(branch,0.f,t);
++            for(int i=0;i<N;i++) {
++                float u=float(i)/N,v=float(i+1)/N;
++                Vec3 b=curve(branch,v,t),ab=b-a;
++                float k=std::clamp(dot(p-a,ab)/std::max(dot(ab,ab),1e-8f),0.f,1.f);
++                Vec3 foot=a+ab*k;
++                float d2=dot(p-foot,p-foot)/activity;
++                if(d2<bestDist2) {
++                    bestDist2=d2;bestGoal=foot;bestTangent=normalized(ab);
++                    bestU=u+(v-u)*k;
++                }
++                a=b;
++            }
++        }
++        float dist=length(p-bestGoal);
++        // Local capture footprint; an independent pump near each pool root
++        // feeds the guide without creating or teleporting liquid.
++        float footprint=.10f+.13f*(1.f-bestU);
++        float guideInfluence=1.f-smooth(footprint,footprint+.25f,dist);
++        Vec3 rootA=curve(0,0.f,t),rootB=curve(1,0.f,t);
++        float rootDistance=std::min(length(p-rootA),length(p-rootB));
++        float pump=(1.f-smooth(.18f,.60f,rootDistance))*
++                   (1.f-smooth(.34f,.70f,p.y));
++        float influence=std::max(guideInfluence,pump*.95f)*on*off;
++        if(influence<1e-5f)return {0,0,0};
++        Vec3 offset=bestGoal-p;
++        Vec3 normal=offset-bestTangent*dot(offset,bestTangent);
++        float normalLength=length(normal);
++        Vec3 n=normalLength>1e-6f?normal/normalLength:Vec3(0,0,0);
++        // Driver is a desired acceleration, with a bounded streamline speed.
++        // Normal restoring acceleration is proportional to offset (not a flat
++        // force pointing at a curve), eliminating the singular capture kick.
++        float through=4.2f+1.2f*helicity+2.4f*whip+1.2f*ring;
++        Vec3 tangent=bestTangent;
++        if(tangent.y<0.f && bestU<.42f && t<6.9f)
++            tangent=normalized(tangent+Vec3(0,.9f,0));
++        Vec3 flow=tangent*through;
++        Vec3 swirl=normalized(cross(tangent,n));
++        Vec3 accel=normal*170.f+flow*4.5f+swirl*(1.5f+1.5f*helicity)
++                   +Vec3(0,9.81f+8.f*pump,0);
++        // Support streams against gravity until final free collapse.
++        float cap=105.f;
++        float magnitude=length(accel);
++        if(magnitude>cap)accel*=cap/magnitude;
++        return accel*influence;
++    }
++
++};
++
++inline Preset legacyWaterbendingTrickPreset(){
++    Preset preset=waterbendingPreset();
++    auto &scene=preset.scene;
++    scene.name="full_choreographed_waterbending_trick";
++    scene.lower={-1.9f,-.12f,-1.15f};scene.upper={1.9f,2.00f,1.15f};
++    // Initial liquid is a genuine shallow pool. The choreography has to draw
++    // and lift this water: no preformed helix, ring, shield or whip geometry.
++    scene.initialLiquidSdf=[](Vec3 p){
++        float r=std::sqrt((p.x/.85f)*(p.x/.85f)+(p.z/.65f)*(p.z/.65f));
++        return std::max({p.y-.28f,-.11f-p.y,r-.97f});
++    };
++    scene.initialVelocity=[](Vec3){return Vec3(0,0,0);};
++    LegacyTrickGuide control;
++    scene.bodyAcceleration=[control](Vec3 p,double t){return control.acceleration(p,t);};
++    // No persistent inlet: the pool is the sole source of liquid. This prevents
++    // a false continual water source during the collapse stage.
++    scene.inlets.clear();
++    preset.camera={1.45f,1.85f,3.55f};preset.target={0,.83f,0};
++    preset.verticalFov=29.f;preset.referenceWaterLevel=.28f;
++    preset.forceNotes="Continuous closest-segment guiding without persistent inlet. Force-guided twin branches: gather 0-1.3 s; split 1.3-2.6; cross/helix 2.6-4.6; whip 4.6-6.1; ring 6.1-7.8; fade to gravity 7.8-10 s. Body accelerations only; all fluid geometry derives from solved particle states.";
++    preset.timingNotes="10 s native fluid integration. Inspect at 1,3,5,7,9.5 s. Persistent inlet may affect collapse; do not use this as evidence of physically exact atomization.";
++    return preset;
++}
++
++
++// Persistent closed-streamline choreography, used only as external force targets.
++// Frame geometry is ALWAYS reconstructed from Solver::particles.
++// No target mesh, point teleportation, hidden inlet, or per-frame liquid reset.
++struct RetainedTrickGuide {
++    static constexpr int count=64;
++    struct Knot {Vec3 p,velocity,tangent,curvature;};
++    std::array<std::array<Knot,count+1>,2> knots{};
++    float currentTime=0, release=1;
++    static float ease(float a,float b,float x) {
++        float q=std::clamp((x-a)/(b-a),0.f,1.f);
++        return q*q*q*(q*(q*6.f-15.f)+10.f); // C2 time transitions
++    }
++    static Vec3 mix(Vec3 a,Vec3 b,float q){return a*(1-q)+b*q;}
++    static Vec3 curve(int b,float u,float t) {
++        float side=b?-1.f:1.f;
++        float a=2.f*pi*u,c=std::cos(a),sn=std::sin(a);
++        // Start under the pool surface. Both guides are loops with no dead end
++        // at which the previous controller continuously ejected liquid.
++        Vec3 flat{side*.36f+.235f*c,.17f,.235f*sn};
++        Vec3 lifted{side*.43f+.24f*c,.75f+.58f*sn,
++                    side*.095f+.045f*std::sin(2*a)};
++        Vec3 split{side*.55f+.285f*c,.87f+.66f*sn,
++                   side*.10f+.065f*std::sin(2*a)};
++        float turn=.8f*ease(2.8f,4.5f,t);
++        Vec3 helix{.45f*std::cos(a+side*turn),.91f+.66f*sn,
++                   side*.185f+.18f*std::sin(2*a+side*turn)};
++        Vec3 whip;
++        if(b==0) whip={.13f+.99f*c,.89f+.17f*sn+.19f*(1-c*c),
++                       .08f+.10f*std::sin(2*a)};
++        else whip={-.32f+.32f*c,.79f+.48f*sn,-.19f+.11f*std::sin(2*a)};
++        // Two material volumes converge into a broad tilted ring, without
++        // deleting either branch. Deliberate telekinetic forcing, not capillarity.
++        Vec3 ring{.64f*c,.94f+.66f*sn,.14f*sn+side*.075f};
++        Vec3 p=mix(flat,lifted,ease(.35f,1.65f,t));
++        p=mix(p,split,ease(1.70f,2.65f,t));
++        p=mix(p,helix,ease(2.70f,3.65f,t));
++        p=mix(p,whip,ease(4.45f,5.50f,t));
++        p=mix(p,ring,ease(5.85f,6.95f,t));
++        return p;
++    }
++    void prepare(double seconds) {
++        currentTime=float(seconds);
++        release=1-ease(7.85f,8.55f,currentTime);
++        for(int b=0;b<2;b++)for(int i=0;i<=count;i++) {
++            float u=float(i)/count,du=1.f/count;
++            auto &k=knots[b][i];k.p=curve(b,u,currentTime);
++            k.velocity=(curve(b,u,currentTime+.002f)-curve(b,u,currentTime-.002f))/.004f;
++            Vec3 before=curve(b,u-du,currentTime),after=curve(b,u+du,currentTime);
++            k.tangent=normalized(after-before);
++            float ds=.5f*(length(after-k.p)+length(k.p-before));
++            Vec3 raw=(after+k.p*(-2.f)+before)/std::max(ds*ds,1e-6f);
++            k.curvature=raw-k.tangent*dot(raw,k.tangent);
++            float mag=length(k.curvature);if(mag>12)k.curvature*=12/mag;
++        }
++    }
++    struct Closest {Vec3 p{},v{},tangent{},curvature{};float d2=1e20f;int branch=0;};
++    Closest closest(Vec3 p) const {
++        Closest out;
++        for(int b=0;b<2;b++)for(int i=0;i<count;i++) {
++            auto &a=knots[b][i];auto &c=knots[b][i+1];
++            Vec3 edge=c.p-a.p;
++            float f=std::clamp(dot(p-a.p,edge)/std::max(dot(edge,edge),1e-8f),0.f,1.f);
++            Vec3 foot=a.p+edge*f;float d2=dot(p-foot,p-foot);
++            if(d2<out.d2) {
++                out.d2=d2;out.p=foot;out.v=mix(a.velocity,c.velocity,f);
++                out.tangent=normalized(mix(a.tangent,c.tangent,f));
++                out.curvature=mix(a.curvature,c.curvature,f);out.branch=b;
++            }
++        }
++        return out;
++    }
++    VelocityGuide sample(Vec3 p,double) const {
++        VelocityGuide g;
++        if(release<=0 || p.y<.04f || p.y>2.05f || std::abs(p.x)>1.6f || std::abs(p.z)>.75f)return g;
++        Closest q=closest(p);float d=std::sqrt(q.d2);
++        float influence=(1-ease(.20f,.48f,d))*release*ease(0,.30f,currentTime);
++        if(influence<=0)return g;
++        Vec3 offset=q.p-p;
++        offset-=q.tangent*dot(offset,q.tangent);
++        // Cross-section confinement is weaker across the ribbon than across
++        // its thickness. Pressure remains responsible for volume exclusion.
++        Vec3 thin=normalized(Vec3(0,0,1)-q.tangent*q.tangent.z);
++        Vec3 normal=offset*3.4f+thin*(dot(offset,thin)*11.5f);
++        float speed=.52f+.22f*ease(2.6f,3.5f,currentTime);
++        speed+=.30f*ease(4.4f,5.3f,currentTime)*(1-ease(5.8f,6.9f,currentTime));
++        g.target=q.v+q.tangent*speed+normal;
++        float v=length(g.target);if(v>3.4f)g.target*=3.4f/v;
++        g.rate=20.f*influence;
++        g.acceleration=(Vec3(0,9.81f,0)+q.curvature*(speed*speed))*influence;
++        g.accelerationLimit=50.f;
++        return g;
++    }
++};
++
++inline Preset waterbendingTrickPreset() {
++    Preset preset=waterbendingPreset();auto &s=preset.scene;
++    s.name="retained_feedback_waterbending_trick";
++    // The visible raised bed confines the pool. Domain boundaries are closed
++    // below/at the sides only as a safety backstop; all outflow is still logged.
++    s.lower={-1.8f,-.12f,-1.10f};s.upper={1.8f,3.30f,1.10f};
++    s.closedBoundaries={true,true,true,false,true,true};
++    s.initialLiquidSdf=[](Vec3 p){
++        float r=std::sqrt((p.x/.95f)*(p.x/.95f)+(p.z/.72f)*(p.z/.72f));
++        return std::max({p.y-.285f,-.11f-p.y,r-.98f});
++    };
++    s.initialVelocity=[](Vec3){return Vec3{};};s.inlets.clear();
++    auto controller=std::make_shared<RetainedTrickGuide>();controller->prepare(0);
++    s.bodyAcceleration={};
++    s.prepareForces=[controller](double t){controller->prepare(t);};
++    s.velocityGuide=[controller](Vec3 p,double t){return controller->sample(p,t);};
++    s.extraAccelerationBound=60.f;
++    preset.camera={1.9f,1.65f,4.6f};preset.target={0,.78f,0};preset.verticalFov=29.f;
++    preset.referenceWaterLevel=.285f;
++    preset.forceNotes="Velocity-error feedback before the common pressure projection; periodic guide paths; moving-guide feed-forward; local gravity support; no inlet or position overwrite. All guidance exactly zero after 8.55 s.";
++    preset.timingNotes="Gather/split 0-2.65; crossing 2.7-4.45; whip 4.45-5.85; ring 5.85-7.85; release 7.85-8.55; free gravity 8.55-10. Quantify real retained and elevated volume, separately from mass-ledger error.";
++    return preset;
++}
++
+ inline Preset makePreset(const std::string &name) {
++    if(name=="legacy_trick")return legacyWaterbendingTrickPreset();
++    if (name=="waterbending_trick" || name=="full_choreographed_waterbending_trick") return waterbendingTrickPreset();
+     if (name=="beach" || name=="pocket_beach_shoaling_crest") return beachPreset();
+     if (name=="waterbending" || name=="externally_forced_waterbending_loop") return waterbendingPreset();
+     if (name=="drop" || name=="macro_drop_early_inertial_impact") return dropImpactPreset();
+--- a/src/gallery_simulate.cpp
++++ b/src/gallery_simulate.cpp
+@@ -62,7 +62,18 @@
+         bool append=!resume.empty()&&std::filesystem::exists(out/"diagnostics.csv");
+         std::ofstream diagnostics(out/"diagnostics.csv",append?std::ios::app:std::ios::out);if(!append)csvHeader(diagnostics);csvRecord(diagnostics,solver);
+         std::cout<<"Initialized "<<solver.nx<<'x'<<solver.ny<<'x'<<solver.nz<<" grid, "<<solver.particles.size()<<" markers, "<<solver.stats.volume<<" m3, in "<<Solver::seconds(start)<<" s"<<std::endl;
++        std::ofstream retained(out/"retention.csv");
++        retained<<"frame,time,particles,volume,initial_volume,outflow_volume,emitted_volume,elevated_05,elevated_08,elevated_11,max_y,max_speed,guide_volume,guide_distance_mean\n";
+         auto save=[&](int frame){
++            double e05=0,e08=0,e11=0,gv=0,dist=0;float ymax=-1e9;
++            gallery::RetainedTrickGuide control;control.prepare(solver.time);
++            for(const auto &p:solver.particles){
++                if(p.p.y>.5f)e05+=p.volume;if(p.p.y>.8f)e08+=p.volume;if(p.p.y>1.1f)e11+=p.volume;
++                ymax=std::max(ymax,p.p.y);
++                if(p.p.y>.45f){float d=std::sqrt(control.closest(p.p).d2);dist+=d*p.volume;gv+=p.volume;}
++            }
++            const auto &st=solver.stats;
++            retained<<std::setprecision(12)<<frame<<','<<solver.time<<','<<solver.particles.size()<<','<<st.volume<<','<<st.initialVolume<<','<<st.outflowVolume<<','<<st.emittedVolume<<','<<e05<<','<<e08<<','<<e11<<','<<ymax<<','<<st.maxSpeed<<','<<gv<<','<<(gv?dist/gv:0)<<'\n';retained.flush();
+             if(noCache)return;
+             solver.writeFrame(out,uint32_t(frame));solver.saveCheckpoint(checkpoint);
+             if(stream){
+--- a/src/trace.cpp
++++ b/src/trace.cpp
+@@ -459,6 +459,7 @@
+     V3 absorption{.10f,.03f,.015f};
+     V3 sunDir=unit(V3(-.5f,.72f,-.48f));
+     float skyPower=1.2f,sunPower=42000,sunAngle=.28f;
++    bool deterministicPreview=false;
+     bool cameraWater=false,selfTest=false,aovs=false,uniformEnvironment=false,auditInterfaces=false,geometricWaterNormals=false,aovSpecularPaths=false;
+     V3 uniformRadiance{1};
+     uint64_t photons=0;float causticRadius=.018f;
+@@ -487,6 +488,7 @@
+         else if(a=="--sky-power")o.skyPower=std::stof(value());else if(a=="--camera-water")o.cameraWater=true;
+         else if(a=="--aovs")o.aovs=true;else if(a=="--uniform-environment"){o.uniformEnvironment=true;o.uniformRadiance=parseV3(value());}
+         else if(a=="--aov-specular-paths"){o.aovs=true;o.aovSpecularPaths=true;}
++        else if(a=="--deterministic-preview")o.deterministicPreview=true;
+         else if(a=="--environment")o.environment=value();
+         else if(a=="--audit-interfaces")o.auditInterfaces=true;else if(a=="--geometric-water-normals")o.geometricWaterNormals=true;
+         else if(a=="--caustic-photons")o.photons=std::stoull(value());else if(a=="--caustic-radius")o.causticRadius=std::stof(value());
+@@ -506,7 +508,13 @@
+     if(o.width<8||o.height<8||o.width>16384||o.height>16384||o.spp<1||o.spp>65536||o.maxDepth<2||o.maxDepth>128||o.threads<1||o.aperture<0||o.fov<3||o.fov>150||o.skyPower<0||o.sunPower<0||o.causticRadius<=0||o.shutterOpen<0||o.shutterClose>1||o.shutterOpen>o.shutterClose)
+         throw std::runtime_error("Render option outside valid range");
+     if(o.focus<0)o.focus=length(o.target-o.eye);
+-    if(o.environment!="neutral"&&o.environment!="forest")throw std::runtime_error("Environment must be neutral or forest");
++    if(o.environment!="neutral"&&o.environment!="forest"&&o.environment!="studio")throw std::runtime_error("Environment must be neutral or forest");
++    if(o.deterministicPreview){
++        int side=int(std::sqrt(float(o.spp)));
++        if(side*side!=o.spp)throw std::runtime_error("Deterministic AA requires square spp: 1,4,9,16,...");
++        if(o.aperture!=0)throw std::runtime_error("Deterministic preview currently requires --aperture 0");
++        if(!o.waterEnd.empty()||!o.solidsEnd.empty())throw std::runtime_error("Deterministic preview currently requires static per-frame geometry");
++    }
+     return o;
+ }
+ 
+@@ -631,6 +639,14 @@
+                     float earth=clamp(-d.y);c=mix(V3(.085f,.09f,.08f),V3(.023f,.031f,.021f),earth);
+                 }
+                 if(o.environment=="forest")c=forestRadiance(d,c);
++                if(o.environment=="studio") {
++                    // Procedural infinite studio illumination; no imported image.
++                    c=V3(.009f,.016f,.025f)+V3(.055f,.065f,.080f)*std::max(0.f,d.y);
++                    V3 key=unit(V3(-.60f,.56f,.57f)),rim=unit(V3(.65f,.48f,-.48f));
++                    c+=V3(3.7f,3.6f,3.4f)*smooth(.89f,.955f,dot(d,key));
++                    c+=V3(2.1f,2.8f,3.7f)*smooth(.94f,.98f,dot(d,rim));
++                    c+=V3(.30f,.35f,.45f)*std::pow(std::max(0.f,d.y),3.f);
++                }
+                 c*=o.skyPower;if(o.uniformEnvironment)c=o.uniformRadiance;texels[y*W+x]=c;
+                 integral+=std::max(1e-12,double(lum(c)))*omega;cdf[y*W+x]=integral;
+             }
+@@ -971,6 +987,86 @@
+     stats.maxDepthTerminations++;return result;
+ }
+ 
++// Deterministic native review integrator. This is deliberately an APPROXIMATE
++// direct-light/Whitted preview, not an unbiased Monte Carlo GI estimator.
++// Exact interface Fresnel, refraction/TIR and Beer attenuation use the same
++// geometry, medium bookkeeping and error-bounded ray origins as tracePath.
++// Environment diffuse lighting uses fixed hemispherical quadrature; indirect
++// diffuse transport/caustics are omitted. No stochastic grain or video filtering.
++V3 previewShadow(D3 origin,V3 direction,float distance,float time,Medium medium,
++                 const BVH &bvh,const Options &o) {
++    V3 visibility(1);float traveled=0;Ray r(origin,direction,time);
++    for(int i=0;i<12;i++) {
++        Hit h;h.t=distance-traveled;
++        if(!bvh.intersect(r,h))return visibility;
++        if(h.mat!=WATER&&h.mat!=BUBBLE&&h.mat!=LIGHT)return V3(0);
++        if(h.mat==LIGHT)return visibility;
++        if(medium.wet())visibility*=expneg(o.absorption*float(h.t));
++        Medium next=medium.after(h);V3 n=h.front?h.ns:-h.ns;
++        visibility*=1.f-fresnel(std::abs(dot(direction,n)),medium.index(),next.index());
++        medium=next;traveled+=float(h.t);if(traveled>=distance)return visibility;
++        r=Ray(offset(h,direction),direction,time);
++    }
++    return visibility;
++}
++V3 traceCleanBranch(Ray ray,Medium medium,const BVH &bvh,const Lighting &lights,
++                    const Options &o,PathStats &stats,int depth,float contribution) {
++    stats.segments++;
++    if(depth>=o.maxDepth||contribution<.0025f){stats.maxDepthTerminations++;return V3(0);}
++    Hit hit;
++    if(!bvh.intersect(ray,hit)) {
++        if(medium.water>0||medium.air>0)stats.unclosedEscapes++;
++        // Fixed diffuse studio emitters avoid a subpixel delta-sun firefly.
++        return lights.sky.base(ray.d);
++    }
++    V3 attenuation=medium.wet()?expneg(o.absorption*float(hit.t)):V3(1);
++    if(hit.mat==LIGHT)return attenuation*lights.emission(hit,-ray.d);
++    if(hit.mat==WATER||hit.mat==BUBBLE) {
++        stats.dielectricEvents++;
++        Medium next=medium.after(hit);float ni=medium.index(),nt=next.index();
++        V3 ng=hit.front?hit.ng:-hit.ng,ns=hit.front?hit.ns:-hit.ns;
++        if(dot(-ray.d,ns)<=1e-4f)ns=ng;
++        V3 wt;bool transmit=refract(ray.d,ns,ni,nt,wt);
++        if(transmit&&dot(wt,ng)>=-1e-6f){ns=ng;transmit=refract(ray.d,ns,ni,nt,wt);}
++        float F=transmit?fresnel(-dot(ray.d,ns),ni,nt):1.f;
++        V3 wr=unit(reflect(ray.d,ns));if(dot(wr,ng)<=1e-6f)wr=unit(reflect(ray.d,ng));
++        V3 c;
++        if(F>0){stats.reflections++;c+=traceCleanBranch(Ray(offset(hit,wr),wr,ray.time),medium,bvh,lights,o,stats,depth+1,contribution*F)*F;}
++        if(transmit&&F<1){stats.transmissions++;float f=(1-F)*sq(ni/nt);c+=traceCleanBranch(Ray(offset(hit,wt),wt,ray.time),next,bvh,lights,o,stats,depth+1,contribution*f)*f;}
++        return c*attenuation;
++    }
++    Surface surface=surfaceAt(hit,medium,o);V3 n=surface.n,wo=-ray.d;
++    if(dot(n,wo)<=0)n=hit.front?hit.ng:-hit.ng;
++    surface.n=n;Frame basis(n);V3 ambient;
++    // Six fixed cosine-weighted directions: smooth, deterministic approximation.
++    for(int i=0;i<6;i++) {
++        float z=std::sqrt((i+.5f)/6.f),r=std::sqrt(1-z*z),a=i*2.39996323f;
++        V3 d=basis.world(V3(r*std::cos(a),r*std::sin(a),z));
++        ambient+=lights.sky.base(d)/6.f;
++    }
++    V3 result=surface.albedo*ambient*(1-surface.f0);
++    V3 reflected=unit(reflect(ray.d,n));
++    result+=lights.sky.base(reflected)*schlick(std::abs(dot(wo,n)),surface.f0)*(1-.65f*surface.roughness);
++    V3 sun=lights.sky.sunDir;float cosine=std::max(0.f,dot(n,sun));
++    if(cosine>0&&maxcomp(lights.sky.sunRadiance)>0) {
++        V3 visible=previewShadow(offset(hit,sun),sun,INF,ray.time,medium,bvh,o);
++        result+=evaluateBsdf(surface,wo,sun).f*lights.sky.sunRadiance*(lights.sky.sunOmega*cosine)*visible;
++    }
++    for(const auto &light:lights.areas)for(int k=0;k<4;k++) {
++        V3 point=light.center+light.u*((k&1)?.55f:-.55f)+light.v*((k&2)?.55f:-.55f);
++        V3 delta=point-hit.p;float dist=length(delta);V3 d=delta/dist;
++        float c=std::max(0.f,dot(n,d))*std::max(0.f,dot(light.n,-d));
++        if(c<=0)continue;
++        V3 visible=previewShadow(offset(hit,d),d,dist*.99999f,ray.time,medium,bvh,o);
++        result+=evaluateBsdf(surface,wo,d).f*light.radiance*(.25f*light.area*c/(dist*dist))*visible;
++    }
++    return result*attenuation;
++}
++SampleResult traceClean(Ray ray,const BVH &bvh,const Lighting &lights,const Options &o,PathStats &stats) {
++    stats.cameraPaths++;Medium m;if(o.cameraWater)m.water=1;SampleResult r;
++    r.beauty=traceCleanBranch(ray,m,bvh,lights,o,stats,0,1.f);return r;
++}
++
+ struct Camera {
+     V3 eye,forward,right,up;float tanFov,aspect,focus,aperture;
+     explicit Camera(const Options &o):eye(o.eye),forward(unit(o.target-o.eye)),right(unit(cross(forward,o.up))),up(cross(right,forward)),tanFov(std::tan(o.fov*PI/360)),aspect(float(o.width)/o.height),focus(o.focus),aperture(o.aperture){}
+@@ -1011,7 +1107,7 @@
+     std::ofstream f(path);if(!f)throw std::runtime_error("Cannot write metadata");
+     double sum=0;float peak=0;uint64_t finitePixels=0;
+     for(V3 p:pixels){if(finite(p))finitePixels++;sum+=lum(p);peak=std::max(peak,maxcomp(p));}
+-    f<<std::setprecision(10)<<"{\n  \"renderer\": \"CYBR WATER VFX native Monte Carlo surface transport\",\n"
++    f<<std::setprecision(10)<<"{\n  \"renderer\": "<<jsonString(o.deterministicPreview?"CYBR WATER VFX deterministic direct-light Whitted preview":"CYBR WATER VFX native Monte Carlo surface transport")<<",\n"
+      <<"  \"width\": "<<o.width<<", \"height\": "<<o.height<<", \"samples_per_pixel\": "<<o.spp<<",\n"
+      <<"  \"max_path_depth\": "<<o.maxDepth<<", \"threads\": "<<o.threads<<", \"seed\": "<<o.seed<<",\n"
+      <<"  \"inputs\": {\"water\": "<<jsonString(o.water)<<", \"water_end\": "<<jsonString(o.waterEnd)<<", \"solids\": "<<jsonString(o.solids)<<", \"solids_end\": "<<jsonString(o.solidsEnd)<<", \"spheres\": "<<jsonString(o.spheres)<<"},\n"
+@@ -1035,7 +1131,7 @@
+      <<"  \"sun_caustics\": {\"method\": \"normal-and-object-filtered Epanechnikov photon density estimate\", \"emitted\": "<<photons.emitted<<", \"stored\": "<<photons.photons.size()<<", \"radius_metres\": "<<photons.radius<<", \"temporal_bins\": "<<photons.bins<<", \"double_count_exclusion\": true},\n"
+      <<"  \"aovs\": "<<(o.aovs?"true":"false")<<", \"aov_specular_paths\": "<<(o.aovSpecularPaths?"true":"false")<<", \"aov_definition\": "
+      <<jsonString(o.aovSpecularPaths?"Fresnel-sampled first non-delta surface reflectance and signed world normal through perfect specular paths; Beer attenuation included in reflectance; identical camera samples":"linear first-surface base reflectance and signed world-space normal, averaged over identical camera samples")<<",\n"
+-     <<"  \"limitations\": [\"RGB rather than spectral transport\", \"finite bounce cutoff with Russian roulette\", \"finite-radius sun caustic density estimation when enabled\", \"foam is a diffuse aggregate material\", \"procedural sky radiance rather than measured atmospheric transport\", \"no bidirectional solution for small area-light caustics\"]\n}\n";
++     <<"  \"limitations\": "<<(o.deterministicPreview?"[\"deterministic preview, not unbiased global illumination\",\"fixed hemispherical diffuse quadrature\",\"no diffuse interreflection or caustics\",\"12-bounce/low-contribution branch cutoff in delivered sequence\",\"straight shadow transmission approximation\"]":"[\"RGB rather than spectral transport\",\"finite bounce cutoff with Russian roulette\",\"finite-radius sun caustic estimate when enabled\"]")<<"\n}\n";
+ }
+ 
+ void selfTest(){
+@@ -1158,10 +1254,14 @@
+             for(int s=0;s<o.spp;s++){
+                 int permuted=int((uint64_t(s)*uint64_t(stride)+uint64_t(shift))%uint64_t(o.spp));
+                 float dx=(s+rng.uniform())/o.spp,dy=(permuted+rng.uniform())/o.spp;
++                if(o.deterministicPreview) {
++                    int side=int(std::ceil(std::sqrt(float(o.spp))));
++                    dx=(s%side+.5f)/side;dy=(s/side+.5f)/side;
++                }
+                 // Path, lens and shutter draws remain independently randomized.
+                 float time=mix(o.shutterOpen,o.shutterClose,rng.uniform());
+                 Ray ray=camera.generate(x+dx,y+dy,rng.uniform(),rng.uniform(),time,o);
+-                SampleResult value=tracePath(ray,bvh,lighting,photons,o,rng,threadStats[size_t(tid)]);
++                SampleResult value=o.deterministicPreview?traceClean(ray,bvh,lighting,o,threadStats[size_t(tid)]):tracePath(ray,bvh,lighting,photons,o,rng,threadStats[size_t(tid)]);
+                 if(!finite(value.beauty)){threadStats[size_t(tid)].invalid++;value.beauty=V3(0);}
+                 sum+=value.beauty;aa+=value.albedo;nn+=value.normal;
+             }
+@@ -1178,6 +1278,7 @@
+     writePfm(o.out+".pfm",pixels,o.width,o.height);writePpm(o.out+".ppm",pixels,o.width,o.height,o.exposure);
+     if(o.aovs){writePfm(o.out+"_albedo.pfm",albedo,o.width,o.height);writePfm(o.out+"_normal.pfm",normal,o.width,o.height);}
+     writeJson(o.out+".json",o,bvh,photons,stats,buildSeconds,renderSeconds,pixels);
++    {std::ofstream method(o.out+"_method.json");method<<"{\"integrator\":\""<<(o.deterministicPreview?"deterministic_direct_Whitted_preview":"Monte_Carlo_path_tracing")<<"\",\"spp\":"<<o.spp<<",\"approximate_diffuse_GI\":"<<(o.deterministicPreview?"true":"false")<<",\"image_generation\":false}\n";}
+     std::cerr<<"Saved "<<o.out<<".pfm/.ppm/.json in "<<renderSeconds<<" render seconds; "<<stats.cameraPaths<<" paths, "<<stats.segments<<" segments\n";
+     return 0;
+ }

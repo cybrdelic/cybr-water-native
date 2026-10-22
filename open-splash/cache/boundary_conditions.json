@@ -1,0 +1,1 @@
+{"order":["x-low","x-high","y-low","y-high","z-low","z-high"],"closed_frictionless":[false,false,true,false,false,false],"implementation":"Common Solver zero-normal MAC flux and frictionless marker contact"}

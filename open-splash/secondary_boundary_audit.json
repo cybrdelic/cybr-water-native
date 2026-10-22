@@ -1,0 +1,5 @@
+{
+  "minimum_saved_secondary_lateral_clearance_m": 0.10388288497924769,
+  "outside_secondary_sample_observations": 0,
+  "scope": "Counts occurrences in saved states; samples have finite lifetimes and are not a conserved physical phase."
+}
