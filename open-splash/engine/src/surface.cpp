@@ -16,7 +16,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <omp.h>
+#include "openmp_compat.hpp"
 namespace water {
 constexpr float PI = 3.14159265358979323846f;
 constexpr float INF = 1.0e20f;

@@ -16,10 +16,27 @@ def run(cmd:list[str],log:Path)->None:
         p=subprocess.run(cmd,stdout=f,stderr=subprocess.STDOUT)
     if p.returncode:raise RuntimeError(log.read_text()[-2500:])
 
+
+def native_binary(directory: Path, name: str) -> str:
+    suffix = '.exe' if os.name == 'nt' else ''
+    for candidate in (name, name + '_native'):
+        path = directory / (candidate + suffix)
+        if path.is_file():return str(path)
+    raise FileNotFoundError(f'Native target {name} missing in {directory}')
+
+def use_build_runtime(binary_dir: Path) -> None:
+    metadata = binary_dir.parent / 'water-build.json'
+    if metadata.exists():
+        directory = json.loads(metadata.read_text()).get('runtime_dir', '')
+        if directory:
+            if not Path(directory).is_dir():raise FileNotFoundError('Configured OpenMP runtime is missing; rebuild.')
+            os.environ['PATH'] = directory + os.pathsep + os.environ.get('PATH', '')
+
 def main()->None:
     ap=argparse.ArgumentParser();ap.add_argument('--start',type=int,default=0);ap.add_argument('--end',type=int,default=240)
-    ap.add_argument('--threads',type=int,default=2);a=ap.parse_args()
-    r=Path(__file__).resolve().parent;b=r/'engine/build';out=r/'rendered';work=out/'work';logs=out/'logs'
+    ap.add_argument('--threads',type=int,default=2);ap.add_argument('--bin-dir',type=Path);a=ap.parse_args()
+    r=Path(__file__).resolve().parent;b=(a.bin_dir or r/'engine/build/bin').resolve();out=r/'rendered';work=out/'work';logs=out/'logs'
+    use_build_runtime(b)
     for p in (out,work,logs):p.mkdir(exist_ok=True,parents=True)
     begin=time.monotonic();phase=out/'fragment_phase.bin'
     for i in range(a.start,a.end):
@@ -30,13 +47,13 @@ def main()->None:
             if time.monotonic()-wait>1800:raise TimeoutError(f'No complete solver state {i}')
             time.sleep(1)
         mesh=work/(n+'.mesh');spheres=work/(n+'.csv');stem=work/n
-        cmd=[str(b/'surface_native'),'--in',str(src),'--out',str(mesh),'--spheres',str(spheres),
+        cmd=[native_binary(b,'surface'),'--in',str(src),'--out',str(mesh),'--spheres',str(spheres),
           '--threads',str(a.threads),'--surface-scale','1.2','--support','3.2','--smooth','3',
           '--solid-field',str(r/('scene/solid_large.sdf' if i>=216 else 'scene/solid.sdf')),'--coherent-fragments','--phase-out',str(phase)]
         if phase.exists():cmd+=['--phase-in',str(phase)]
         run(cmd,logs/(n+'_surface.log'))
         surface=json.loads(Path(str(mesh)+'.json').read_text())
-        run([str(b/'trace_native'),'--water',str(mesh),'--spheres',str(spheres),
+        run([native_binary(b,'trace'),'--water',str(mesh),'--spheres',str(spheres),
              '--solids',str(r/'scene/solids.mesh'),'--out',str(stem),'--width','960','--height','540',
              '--spp','4','--bounces','12','--threads',str(a.threads),'--camera','1.9,1.65,4.6',
              '--target','0,.78,0','--fov','29','--aperture','0','--environment','studio',

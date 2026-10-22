@@ -1,0 +1,59 @@
+name: Native WATER portability
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        revision: [open-splash, retained-trick, baseline]
+        openmp: ['ON']
+        include:
+          - os: ubuntu-latest
+            revision: open-splash
+            openmp: 'OFF'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install build frontend
+        run: python -m pip install "cmake>=3.30,<5"
+      - name: Use Apple Clang with OpenMP
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew list libomp >/dev/null 2>&1 || brew install libomp
+          echo "OpenMP_ROOT=$(brew --prefix libomp)" >> "$GITHUB_ENV"
+      - name: Build preserved revision
+        run: python tools/native.py build --revision ${{ matrix.revision }} --build-dir .local/build --openmp ${{ matrix.openmp }} --jobs 2
+      - name: Native checks
+        run: python tools/native.py test --build-dir .local/build
+      - name: Advance simulation, reconstruct and render
+        run: python tools/native.py smoke --build-dir .local/build --output .local/smoke
+      - name: Restore regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Verify and restore packaged original sample states
+        if: matrix.revision == 'open-splash' && matrix.openmp == 'ON'
+        run: python open-splash/restore_transport_parts.py
+      - name: Retain logs and bounded native evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.os }}-${{ matrix.revision }}-${{ matrix.openmp }}
+          path: |
+            .local/build/configure.log
+            .local/build/build.log
+            .local/build/water-build.json
+            .local/build/Testing/Temporary/LastTest.log
+            .local/smoke/*.log
+            .local/smoke/smoke.json
+            .local/smoke/preview.ppm
+          if-no-files-found: ignore

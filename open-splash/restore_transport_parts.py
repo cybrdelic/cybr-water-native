@@ -74,7 +74,13 @@ def main() -> None:
             if temporary.stat().st_size != total or digest(temporary) != entry['sha256']:
                 raise ValueError(f'Read changed during restore: {entry["path"]}')
             # Atomic creation without overwriting an existing destination.
-            os.link(temporary, target)
+            try:
+                os.link(temporary, target)
+            except OSError as exc:
+                if os.name != 'nt' or getattr(exc, 'winerror', None) not in (1, 50):
+                    raise
+                # Windows rename refuses an existing destination even in a race.
+                os.rename(temporary, target)
             print(f'Restored {entry["path"]}: {total} bytes')
         finally:
             temporary.unlink(missing_ok=True)

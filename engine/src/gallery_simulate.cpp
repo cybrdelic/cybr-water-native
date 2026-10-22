@@ -1,3 +1,4 @@
+#include <sstream>
 // Separate gallery driver: CLI/cache protocol copied from simulate.cpp.
 // All fluid evolution remains in the unchanged shared water::Solver.
 #include "gallery_scenes.hpp"

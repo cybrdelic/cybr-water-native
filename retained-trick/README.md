@@ -2,7 +2,7 @@
 
 Earlier packaged source, retained for lineage: native APIC/MAC velocity feedback with moving-guide feed-forward, applied before pressure projection. The closed guides morph through gather, split, crossing, outward sweep, ring, and release. They supply forces rather than rendered water geometry.
 
-This revision completes a real native surface movie and retains the guided liquid forms more clearly than the preceding transport experiment. **This revision's later splash audit finds artificial boundary contact and repeated coarse-marker beads. Its source/media remain unchanged here. A subsequent [open-boundary repair](../open-splash/README.md) is packaged separately, with a new simulation and explicit 9 s domain handoff.**
+This revision completes a real native surface movie and retains the guided liquid forms more clearly than the preceding transport experiment. **This revision's later splash audit finds artificial boundary contact and repeated coarse-marker beads. Its historical simulation behavior/media remain intact; build and renderer portability repairs are documented in the root README. A subsequent [open-boundary repair](../open-splash/README.md) is packaged separately, with a new simulation and explicit 9 s domain handoff.**
 
 ![Retained-trick preview, including splashdown](../media/retained-trick.gif)
 
@@ -32,7 +32,7 @@ There is no adaptive refinement, resolved surface tension, coupled air, or physi
 
 ## Requirements and reproduction
 
-Linux, a C++17 compiler with OpenMP (the Makefile defaults to g++), GNU Make, Python 3, and FFmpeg are the documented toolchain. The two main Python runners use the standard library. Optional older diagnostic `drop33_containment.py` uses NumPy and expects its own capture data, which is not part of this take. No GPU or external C++ library is required by this source.
+Windows, Linux or macOS with CMake 3.30+, a C++17 compiler, Python 3.10+ and FFmpeg. See [portable native setup](../README.md#portable-native-setup) for OpenMP and serial options. The two main Python runners use the standard library. Optional older diagnostic `drop33_containment.py` uses NumPy and expects its own capture data, which is not part of this take. No GPU or external C++ library is required by this source.
 
 From the repository root:
 
@@ -41,7 +41,7 @@ cd retained-trick
 python3 run_all.py --threads 4
 ```
 
-This builds the complete engine and solver checks, runs solver and tracer checks, regenerates all 241 states, renders 240 native frames, and encodes the movie. It is a potentially long CPU workload. It overwrites the local cache and output movie and deliberately deletes existing `rendered/frame_*.png` and `.json` files before rerendering. Use a disposable working copy if you need to preserve an earlier run.
+This builds the complete engine through CMake, runs its solver, guidance and tracer checks, regenerates all 241 states, renders 240 native frames, and encodes the movie. Add `--checks-only` to stop after the native checks; `--openmp ON` requires parallel support and `--openmp OFF` selects serial execution. The full pipeline is a potentially long CPU workload. It overwrites the local cache and output movie and deliberately deletes existing `rendered/frame_*.png` and `.json` files before rerendering. Use a disposable working copy if you need to preserve an earlier run.
 
 The saved movie is outside this directory at `../media/retained-trick-10s.mp4`, so the runner's newly generated movie will not overwrite the committed original preview. After a complete integration, render a selected existing state range with:
 
@@ -53,13 +53,12 @@ The end is exclusive. The package contains only seven selected cache states (0, 
 
 To build and run the supplied core checks separately:
 
-```sh
-make -C CYBR_WATER_VFX -j4 all checks
-g++ -O3 -std=c++17 -fopenmp CYBR_WATER_VFX/tests/retained_guidance_checks.cpp -o CYBR_WATER_VFX/build/retained_guidance_checks
-CYBR_WATER_VFX/build/retained_guidance_checks
+```text
+python ../tools/native.py build --revision retained-trick --build-dir CYBR_WATER_VFX/build
+python ../tools/native.py test --build-dir CYBR_WATER_VFX/build
 ```
 
-The guidance check is supplied but is not invoked by `run_all.py`. These commands are derived from the inspected Makefile, source, and runners; none was executed during repository packaging.
+These commands run from `retained-trick/`. The guidance check is now included by CTest and `run_all.py`; the historical reports below remain records of the supplied take.
 
 ## Included evidence
 
@@ -69,6 +68,6 @@ The guidance check is supplied but is not invoked by `run_all.py`. These command
 - [Retention](production_cache/retention.csv), [numerical diagnostics](production_cache/diagnostics.csv), [domain audit](production_cache/domain_audit.csv), and [boundary conditions](production_cache/boundary_conditions.json).
 - Seven original binary sample states with ID, volume and whitewater sidecars, plus static review mesh/SDF inputs. These are sample data, not a complete simulation cache.
 - [Solver](solver_tests_final.json), [optics](optics_tests_final.json), and [guidance](guidance_tests_final.json) reports from the delivered run. These historical passes were not rerun for publication.
-- [Native repair patch](native_repair.patch) and complete engine/test source, preserved without code changes.
+- [Native repair patch](native_repair.patch) and complete engine/test source. Later portability changes preserve the simulation equations and original optics assertions.
 
 The archive name uses “FIXED” for the earlier transport repair. It does not mean the later splash defects are fixed. No new license grant is added.

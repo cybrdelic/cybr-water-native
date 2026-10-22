@@ -28,23 +28,22 @@ The full cache is not bundled. The final movie uses the preserved prefix and a r
 
 ## Requirements and reproduction
 
-Linux, a C++17 compiler with OpenMP (g++ by default), FFmpeg/ffprobe, Python 3.10+, NumPy, pandas and Pillow. The native source uses the C++ standard library, without an external C++ or GPU dependency. Allow several GB of RAM and disk for the regenerated state cache and render intermediates. This is a substantial CPU job, not a real-time demo.
+Windows, Linux or macOS with CMake 3.30+, a C++17 compiler, FFmpeg/ffprobe, Python 3.10+, NumPy, pandas and Pillow. See [portable native setup](../README.md#portable-native-setup) for compiler/runtime choices and an explicit serial fallback. The native source uses the C++ standard library, without an external C++ or GPU dependency. Allow several GB of RAM and disk for the regenerated state cache and render intermediates. This is a substantial CPU job, not a real-time demo.
 
 From the repository root:
 
-```sh
-python3 -m venv .venv
-. .venv/bin/activate
-python3 -m pip install -r open-splash/requirements.txt
-python3 open-splash/reproduce.py --output "$(pwd)/runs/open-splash" \
-  --sim-threads 3 --render-threads 4
+Create an environment with `python -m venv .venv`. Use `.venv/bin/python` on Linux/macOS or `.venv/Scripts/python.exe` on Windows in place of `python` below:
+
+```text
+python -m pip install -r open-splash/requirements.txt
+python open-splash/reproduce.py --output runs/open-splash --sim-threads 3 --render-threads 4
 ```
 
-The output must be new or empty and outside `open-splash/`. The driver compiles eight native programs, runs the supplied checks, exports matching solids/SDFs, simulates to frame 216, performs the domain transfer, finishes 241 states, reconstructs/renders frames 0–239, encodes the movie and verifies it. The driver invokes the compiler directly; GNU Make is needed only if using the supplied Makefile independently. An optional `--previous-video` argument supplies an older movie for its comparison sheet.
+The output must be new or empty and outside `open-splash/`. The driver compiles the supplied native programs and tests, runs the supplied checks, exports matching solids/SDFs, simulates to frame 216, performs the domain transfer, finishes 241 states, reconstructs/renders frames 0–239, encodes the movie and verifies it. The driver copies the CMake definition and build helper with the engine, selects the local compiler, and resolves executable suffixes and OpenMP runtime paths. GNU Make is not required. Add `--checks-only` to build and run checks without a full simulation or film; this bounded path needs only the C++ toolchain, CMake and Python. `--openmp ON` requires parallel support, `--openmp OFF` selects serial execution, and the default `AUTO` reports the selected mode. An optional `--previous-video` argument supplies an older movie for its comparison sheet.
 
 The recorded delivery used three simulation threads initially and two for its handoff suffix; the reproduction driver uses its chosen `--sim-threads` for both stages. [Build provenance](BUILD_PROVENANCE.json) records the original compiler and library versions. Compiler, CPU, thread count and floating-point differences can change trajectories and hashes. This repository does not promise universal bitwise reproduction.
 
-These commands are derived from the inspected source. **No native compilation, simulation, project-script execution or native rerender was performed during repository preparation.** Saved test passes are historical delivery evidence, not newly executed tests.
+The original publication review did not execute native code. Saved delivery test reports remain historical; the later portability workflow exercises native checks and a bounded real solver/surface/render path without claiming to reproduce the full movie.
 
 ## Original sample-state transport
 
@@ -65,6 +64,6 @@ The second command restores the six original `.bin` filenames beside their parts
 - [Retention](cache/retention.csv), [domain audit](cache/domain_audit.csv), [diagnostics](cache/diagnostics.csv), and [boundary conditions](cache/boundary_conditions.json), covering states 0–240.
 - [All 240 frame records](evidence/frame_records.json), aggregated under original filenames. Recorded numeric values and hashes are unchanged; old machine-specific input-path prefixes are removed. The same prefix is removed from [historical handoff commands](handoff_commands.json).
 - Original representative states at frames 0, 180, 216, 234 and 240, plus the exact pre-transfer frame 216. State 240 is the ten-second endpoint, not an extra video frame.
-- Full engine and test sources, reproduction scripts, source patch, final fragment-classification state, and historical test reports. Native source, runners, raw sample bytes, delivered images and MP4 bytes are preserved. Redundant delivery README, original archive inventory and process-ID job log are not public files.
+- Full engine and test sources, reproduction scripts, source patch, final fragment-classification state, and historical test reports. Simulation behavior, raw sample bytes, delivered images and MP4 bytes are preserved. Later portability edits add CMake/runtime support, required standard-library includes, and a precision fallback for platforms with Float64-only `long double`. Redundant delivery README, original archive inventory and process-ID job log are not public files.
 
 Publication review independently checked archive-entry hashes, provided snapshot-to-record hashes, handoff primary bytes, recorded volume/boundary claims, JSON and Python syntax, local documentation links, and strict decoding of every video. All 240 frames of this movie decode uniquely. This verifies the supplied evidence, not the absent full cache or a fresh physics run. No project license was supplied; no license grant is added.
