@@ -37,6 +37,16 @@ The default simulation remains the accepted 3 cm pressure grid, 1 cm marker spac
 
 Use a clean output directory for a new simulation. `--skip-simulation` only skips an already completed state cache. The renderer can resume verified completed frames. Native simulation and rendering may be expensive; there is no real-time performance claim.
 
+### Resume an interrupted take
+
+```sh
+python3 reproduce.py --out runs/duet --resume --width 960 --height 540
+```
+
+Keep the original `gallery_sim` executable, recorded simulation command, and cache together. Native checkpoints include an executable/configuration fingerprint; rebuilding or changing solver options can make them incompatible. The runner preserves full frame-boundary checkpoints separately from transient domain-growth checkpoints. Recovery restores the checkpoint's exact grown grid bounds and original simulation options, keeps the completed frame prefix, archives the uncommitted suffix, trims ledger rows to the restart time, and preserves domain-growth history. It never reconstructs a restart from display particles. The native regression compares an uninterrupted run with this recovered run byte for byte, including primary states, secondary states, IDs and volumes.
+
+Rendering resumes only with matching source, native binaries, scene geometry, optical settings and reconstruction-history hashes. Final export runs the complete raw-state audit once, reuses the hashes calculated during that read to check every render receipt, verifies the phase-history chain and surface-volume bounds, then fully decodes the 240-frame movie and checks its unique frames and presentation times. These checks establish provenance and continuity; visual acceptance still requires reviewing the actual result.
+
 ## Source identity and scope
 
 `engine/src/cinematic_choreography.hpp` contains the new controller. `gallery_scenes.hpp` registers the opt-in scene and `gallery_simulate.cpp` adds correct per-scene guide diagnostics. `fluid.hpp`, `surface.cpp` and `trace.cpp` remain byte-for-byte identical to accepted V6. The new header participates in Makefile dependencies for every affected target.
