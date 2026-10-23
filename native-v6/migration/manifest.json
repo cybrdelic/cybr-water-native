@@ -1,0 +1,11 @@
+{
+  "format": "cybr-source-bundle-v1",
+  "compressed_sha256": "cb781ecdd383f42943377abd356a09b17fb0361965c4fe60678524eccf4ff174",
+  "parts": ["source_delta.000.b64", "source_delta.001.b64", "source_delta.002.b64", "source_delta.003.b64"],
+  "part_sha256": {
+    "source_delta.000.b64": "fba07d614fb1dc46b862b64835cb5a65f2ef5e6db60004b43aabe2d540605c13",
+    "source_delta.001.b64": "42bf0a039c40d890a3c54616e4e787e70b3d3f0d5f8f1bc29bf684ea605a5de9",
+    "source_delta.002.b64": "dbb4b4e078decd722a57cbf1f6f094be73c19f483162c5480e5fe3400d659906",
+    "source_delta.003.b64": "19f8274068a1a0516f8bc97150ec1244239ee9064f2d40d298aaab5a509b50c1"
+  }
+}
