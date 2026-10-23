@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse, csv, hashlib, json, math, subprocess, sys
 from fractions import Fraction
 from pathlib import Path
-from PIL import Image, ImageDraw
 from render_contract import check_receipt
 ROOT=Path(__file__).resolve().parent
 
@@ -38,6 +37,8 @@ def verify_receipt(record:dict,contract:dict,contract_sha:str,frame:int,
 
 def main()->None:
  ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--take',type=Path,required=True);a=ap.parse_args()
+ # Receipt validation is standard-library-only; imaging is needed for export.
+ from PIL import Image, ImageDraw
  take=a.take.resolve();rendered=take/'rendered';delivery=take/'delivery';delivery.mkdir(exist_ok=True)
  contract_path=rendered/'render_contract.json';contract=json.loads(contract_path.read_text());contract_sha=sha(contract_path)
  source_now={p.name:sha(p) for p in (ROOT/'engine/src').glob('*') if p.is_file()}
