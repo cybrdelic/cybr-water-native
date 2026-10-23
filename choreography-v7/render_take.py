@@ -26,8 +26,11 @@ def main()->None:
  ap.add_argument('--width',type=int,default=960);ap.add_argument('--height',type=int,default=540)
  ap.add_argument('--select',default='');ap.add_argument('--workers',type=int,default=2)
  ap.add_argument('--surface-threads',type=int,default=3)
+ ap.add_argument('--trace-threads',type=int,default=1)
  ap.add_argument('--samples',type=int,default=4);ap.add_argument('--adaptive-aa',type=int,default=16)
- a=ap.parse_args();take=a.take.resolve();assets=a.scene_assets.resolve()
+ a=ap.parse_args()
+ if a.trace_threads<1:ap.error('--trace-threads must be positive')
+ take=a.take.resolve();assets=a.scene_assets.resolve()
  frames=[int(x) for x in a.select.split(',')] if a.select else list(range(240))
  if not frames or any(i<0 or i>=240 for i in frames):ap.error('Frame out of range')
  selected=bool(a.select);out=take/('selected' if selected else 'rendered');out.mkdir(parents=True,exist_ok=True)
@@ -38,7 +41,7 @@ def main()->None:
  def render_command(mesh:Path,spheres:Path,stem:Path)->list[str]:
   return [str(b/'trace_native'),'--water',str(mesh),'--spheres',str(spheres),'--solids',str(assets/'solids.mesh'),'--out',str(stem),
        '--width',str(a.width),'--height',str(a.height),'--spp',str(a.samples),'--bounces','20','--branch-cutoff','.001',
-       '--threads','1','--camera',camera,'--target',target,'--fov',str(preset['vertical_fov_degrees']),
+       '--threads',str(a.trace_threads),'--camera',camera,'--target',target,'--fov',str(preset['vertical_fov_degrees']),
        '--aperture','0','--environment','overcast','--sky-power','1.2','--sun-power','0','--deterministic-preview',
        '--absorption','.18,.045,.025','--wet-level','.20','--wet-reach','.10','--coherent-normals','--oriented-foam',
        '--adaptive-aa',str(a.adaptive_aa),'--aa-threshold','.035','--diffuse-samples','24',
