@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse, concurrent.futures, hashlib, json, os, subprocess, time
 from pathlib import Path
 from PIL import Image
-from render_contract import make_contract, freeze_contract, check_receipt
+from render_contract import make_contract, freeze_contract, check_receipt, save_png_atomic
 ROOT=Path(__file__).resolve().parent
 
 def sha(path:Path)->str:
@@ -56,7 +56,7 @@ def main()->None:
   if report['nonfinite_paths'] or report['finite_pixels']!=a.width*a.height:raise RuntimeError(f'Nonfinite frame {i}')
   with Image.open(stem.with_suffix('.ppm')) as image:
    if image.size!=(a.width,a.height):raise RuntimeError('Wrong size')
-   rgb_sha=hashlib.sha256(image.tobytes()).hexdigest();image.save(png)
+   rgb_sha=hashlib.sha256(image.tobytes()).hexdigest();save_png_atomic(image,png)
   receipt={'frame':i,'time_s':i/24,'selected_frame_review':selected,'png_sha256':sha(png),'rgb_sha256':rgb_sha,
            'source_states':source_record,'source_code_sha256':source,'render_contract_sha256':sha(out/'render_contract.json'),'surface':geometry,'render':report,'command':cmd}
   receipt.update(phase_record)

@@ -1,14 +1,14 @@
-"""Reject mixed-quality continuation before any existing native frame is reused.
+"""Validate native render provenance and publish complete PNG files.
 
 Worker counts and absolute working directories are not visual settings. Source,
-scene geometry, camera, reconstruction, sampling and optics are. This module
-never changes frames and never supplies a missing frame.
+scene geometry, camera, reconstruction, sampling and optics are.
 """
 from __future__ import annotations
 import hashlib
 import json
 import os
 from pathlib import Path
+import tempfile
 from typing import Any
 
 VALUE_FLAGS = (
@@ -33,6 +33,22 @@ def sha(path: Path) -> str:
         for block in iter(lambda: stream.read(1 << 20), b''):
             digest.update(block)
     return digest.hexdigest()
+
+def save_png_atomic(image: Any, path: Path) -> None:
+    """Publish a flushed PNG without exposing partial bytes at the final path."""
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='wb', dir=path.parent,
+                                         prefix=path.name + '.', suffix='.tmp',
+                                         delete=False) as stream:
+            temporary = Path(stream.name)
+            image.save(stream, format='PNG')
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 def visual_options(command: list[str]) -> dict[str, Any]:
     answer: dict[str, Any] = {}
