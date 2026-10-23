@@ -13,12 +13,25 @@ An opt-in choreography upgrade on the accepted V6 solver, mesher and dielectric 
 | 4.55-5.70 | Broad staggered sweeping bands, 0.20 s apart |
 | 5.70-6.65 | Opposed tilted orbital catches |
 | 6.65-7.80 | Convergence into an upright open ring with a readable hold |
-| 7.80-8.95 | Tilted spiral return with staggered release |
+| 7.80-8.95 | Tilted return with staggered release |
 | 8.95-10.00 | Guidance exactly zero; native gravity/pressure/collisions |
 
 The poses are force targets, **never rendered water geometry**. The shared MAC solver applies velocity feedback before pressure projection; particles move under that solved velocity. There are no permanent sources, teleports or phase-specific replacement meshes. Smooth periodic guides, quintic time transitions, moving-target feed-forward and bounded feedback avoid the unstable additive acceleration used by early experiments.
 
 The controller tests verify finite values, loop closure, bounded target velocities/accelerations, transition continuity, distinct poses, exact force release and preservation of the original scene. Those mathematical checks do not on their own certify that the fluid visually follows the choreography. Native fluid renders are the visual evidence.
+
+## Verified completed take
+
+The completed take is **960 x 540, 24 fps and 10 seconds**, with **240 unique native rendered frames and 240 unique decoded movie frames**. Full movie decoding, presentation timestamps, native state hashes and the reconstruction phase chain passed verification. All **241 native states (frames 0-240)** retain **439,624 unique primary IDs** and **0.43962399889 m3** of primary liquid. The audit records zero primary-volume change, zero added/outflow volume and zero volume-ledger error.
+
+The reviewed native stills and contact sheet show broad staggered sweeps, an upright open ring, a tilted return and an active basin splash with small late foreground runoff. The camera audit counts 6,139 primary centers (1.3964%) outside the last movie frame; this projection count is separate from the zero domain outflow recorded by the conservation audit. Visual inspection covered the recorded stills and contact sheet; automated decoding covered the entire movie.
+
+| Verified artifact | SHA-256 |
+|---|---|
+| `CYBR_WATERBENDING_DUET_V7_10S.mp4` | `5e319a8cd6231be032de8e7008a8bb1784bdc0c9389e7c8d0cd8ea8a2d36fcc5` |
+| `SIMULATION_AUDIT.json` | `abb8bf212aff2b7676a7b3625ababf8116943777fc24a7e0207b5f106fa082d6` |
+
+[Final take verification](evidence/FINAL_TAKE_VERIFICATION.json) records the compact export, conservation, framing and source-identity evidence, including the corrected contact-sheet hash. The rendering and physical-model limits below still apply.
 
 ## Build, test and render
 
@@ -47,12 +60,12 @@ Keep the original `gallery_sim` executable, recorded simulation command, and cac
 
 Rendering resumes only with matching source, native binaries, scene geometry, optical settings and reconstruction-history hashes. PNG publication writes and synchronizes a temporary file before atomically replacing the final path, so an interrupted encoder cannot overwrite a completed image with partial bytes. Final export runs the complete raw-state audit once, reuses the hashes calculated during that read to check every render receipt, verifies the phase-history chain and surface-volume bounds, then fully decodes the 240-frame movie and checks its unique frames and presentation times. These checks establish provenance and continuity; visual acceptance still requires reviewing the actual result.
 
-`render_take.py` exposes three scheduling controls: `--workers` sets concurrent frames, `--surface-threads` sets reconstruction threads, and `--trace-threads` sets native tile workers within each frame (default `1`, must be positive). On a shared CPU, `--workers 3 --surface-threads 2 --trace-threads 2` is a measured starting point. Reconstruction remains sequential to preserve its phase history. Trace threads share each frame's geometry and caches, and leave resolution, sampling, optics and the frozen native source/binary contract unchanged. The frame-42 check in `evidence/TRACE_THREAD_PARITY.json` matched decoded RGB hashes and all recorded transport statistics at one and two trace threads. Timings depend on competing work; drain the existing runner before resuming with different scheduling.
+`render_take.py` exposes three scheduling controls: `--workers` sets concurrent frames, `--surface-threads` sets reconstruction threads, and `--trace-threads` sets native tile workers within each frame (default `1`, must be positive). On a shared CPU, `--workers 3 --surface-threads 2 --trace-threads 2` is a measured starting point. Reconstruction remains sequential to preserve its phase history. Trace threads share each frame's geometry and caches, and leave resolution, sampling, optics and the frozen native source/binary contract unchanged. The [frame-42 trace check](evidence/TRACE_THREAD_PARITY_1_2_4.json) matched decoded RGB and recorded transport statistics at one, two and four threads; the retained linear PFM payloads also matched byte for byte at two and four threads. The [frame-159 surface check](evidence/SURFACE_THREAD_PARITY.json) matched mesh, sphere CSV and phase bytes at two and four reconstruction threads. These are checks of those recorded inputs, not controlled speedup benchmarks. Timings depend on competing work; drain the existing runner before resuming with different scheduling.
 
 ## Source identity and scope
 
 `engine/src/cinematic_choreography.hpp` contains the new controller. `gallery_scenes.hpp` registers the opt-in scene and `gallery_simulate.cpp` adds correct per-scene guide diagnostics. `fluid.hpp`, `surface.cpp` and `trace.cpp` remain byte-for-byte identical to accepted V6. The new header participates in Makefile dependencies for every affected target.
 
-The first coarse pilot merged the whip streams; the candidate separates height and depth, uses an actual figure-eight projection, and slows the final return. Pilot frames are not passed off as the finished take. Local run evidence is distinct from the CI tests, which compile and check native operators but do not run a full expensive movie.
+The first coarse pilot merged the whip streams; the V7 guide separates height and depth, uses an actual figure-eight projection, and slows the final return. Pilot frames are not passed off as the finished take. Local run evidence is distinct from the CI tests, which compile and check native operators but do not run a full expensive movie.
 
 This remains externally guided fantasy fluid, with uniform 3 cm resolution, one-way whitewater and approximate preview indirect lighting. It does not add coupled air dynamics, resolve microscopic breakup, or guarantee thin-sheet physical accuracy. V6 has not been overwritten. No new license grant is introduced.

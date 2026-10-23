@@ -107,7 +107,7 @@ def main()->None:
  result['marker_spacing_m']=float(json.loads((take/'cache/manifest.json').read_text())['marker_spacing_m'])
  temp.replace(movie);result['sha256']=sha(movie)
  verification_tmp=delivery/'VERIFICATION.json.tmp';verification_tmp.write_text(json.dumps(result,indent=2)+'\n');verification_tmp.replace(delivery/'VERIFICATION.json')
- picks=[36,72,108,126,150,180,204,234];labels=['DRAW / LIFT','FIGURE EIGHT','COIL','STAGGERED SWEEPS','ORBITAL CATCH','RING HOLD','SPIRAL RETURN','FREE SPLASH']
+ picks=[36,72,108,126,150,180,204,234];labels=['DRAW / LIFT','FIGURE EIGHT','COIL','STAGGERED SWEEPS','ORBITAL CATCH','RING HOLD','TILTED RETURN','FREE SPLASH']
  tw=384;th=round(h*tw/w);board=Image.new('RGB',(4*tw,2*(th+28)),(13,20,25));d=ImageDraw.Draw(board)
  for k,(i,label) in enumerate(zip(picks,labels)):
   x=(k%4)*tw;y=(k//4)*(th+28)

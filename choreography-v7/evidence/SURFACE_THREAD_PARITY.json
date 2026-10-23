@@ -1,0 +1,98 @@
+{
+  "frame": 159,
+  "command": [
+    "engine/build/surface",
+    "--in",
+    "runs/duet/cache/frame_000159.bin",
+    "--out",
+    "runs/surface-thread-parity-frame159/frame_000159.mesh",
+    "--spheres",
+    "runs/surface-thread-parity-frame159/frame_000159.csv",
+    "--threads",
+    "4",
+    "--surface-scale",
+    "1.2",
+    "--support",
+    "6",
+    "--smooth",
+    "4",
+    "--normal-smooth",
+    "0",
+    "--topology-normal-smooth",
+    "4",
+    "--center-relax",
+    ".25",
+    "--max-iso-offset",
+    "1.5",
+    "--solid-field",
+    "runs/duet/scene/solid.sdf",
+    "--coherent-fragments",
+    "--phase-out",
+    "runs/surface-thread-parity-frame159/frame_000159.phase",
+    "--phase-in",
+    "runs/duet/rendered/frame_000158.phase"
+  ],
+  "input_sha256": {
+    "native_binary": "b399043a73d1cff45c2ed2184eb795cfe19165343aba18b259ed88f7f03f6479",
+    "solid_field": "671af52d512ffdb24f6e0e01884fe75bfc70ba07aadeea81deb9312c0e86f9b9",
+    "previous_phase": "13faafa010ab4b2cfff693675ecaf68980bd3a15b9f85f84fea673b9323b643e",
+    "source_states": {
+      ".bin": "fd59043fc9f03e9c8ef0185a4d428d34f8777fc4eeb9f7b8145be552a88eab62",
+      ".white": "183505e230676306a50692db27c3e3a661a16a86664261dab2c55e3557c9ddea",
+      ".ids": "cafd4996eb8207d706fa54786e26498b73294c9cc0c0b11d84a8ae84ef85c1a3",
+      ".volumes": "d45df310b432ec1f8fde1f0b71935373a7c1b7113d2fe2fa06c9873f021750c3"
+    }
+  },
+  "baseline": {
+    ".mesh": {
+      "sha256": "20535b4a11459d5bea3a159a0673e698a4065fd3bf8c5394d36044fdbf539551",
+      "bytes": 39568664
+    },
+    ".csv": {
+      "sha256": "4d11ac2ea6431b02214a29215f98219599a9016f5999bfb807da88afdfd33d60",
+      "bytes": 343538
+    },
+    ".phase": {
+      "sha256": "5865834293c31e4955891daaa4d9dd6924d4d47db3f6767705ed6ff3eac77472",
+      "bytes": 2198132
+    }
+  },
+  "baseline_surface_seconds": 44.49658543,
+  "timing_scope": "One four-thread reconstruction compared with an earlier two-thread production reconstruction; shared load differs, so this is not a controlled speedup benchmark.",
+  "returncode": 0,
+  "aborted_for_memory": false,
+  "wall_seconds": 23.491249971004436,
+  "child_user_seconds": 16.626196,
+  "child_system_seconds": 0.901849,
+  "child_max_rss_bytes": 253734912,
+  "actual": {
+    ".mesh": {
+      "sha256": "20535b4a11459d5bea3a159a0673e698a4065fd3bf8c5394d36044fdbf539551",
+      "bytes": 39568664
+    },
+    ".csv": {
+      "sha256": "4d11ac2ea6431b02214a29215f98219599a9016f5999bfb807da88afdfd33d60",
+      "bytes": 343538
+    },
+    ".phase": {
+      "sha256": "5865834293c31e4955891daaa4d9dd6924d4d47db3f6767705ed6ff3eac77472",
+      "bytes": 2198132
+    }
+  },
+  "byte_identity": {
+    ".mesh": true,
+    ".csv": true,
+    ".phase": true
+  },
+  "probe_surface_seconds": 23.24149453,
+  "geometry_changes_excluding_seconds": {},
+  "geometry_identical_excluding_seconds": true,
+  "parity_passed": true,
+  "format": "CYBR native surface two-four thread parity 1",
+  "threads": {
+    "baseline": 2,
+    "probe": 4
+  },
+  "source_report_sha256": "bb94258bc4ddbc67b0c06bfe58bda95abbf7c835539cce3566b0d4c7e88dcb31",
+  "command_path_scope": "Command paths are normalized relative to choreography-v7: runs/duet supplies the recorded inputs; runs/surface-thread-parity-frame159 receives probe outputs. Input/output hashes identify the actual compared payloads."
+}

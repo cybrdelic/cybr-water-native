@@ -1,0 +1,42 @@
+{
+  "format": "CYBR native tracer one-two-four thread parity 1",
+  "observed_utc": "2026-10-23T05:03:31.588515+00:00",
+  "frame": 42,
+  "simulation_time_s": 1.75,
+  "resolution": [
+    960,
+    540
+  ],
+  "samples_per_pixel": 4,
+  "adaptive_aa_max": 16,
+  "max_path_depth": 20,
+  "native_binary_sha256": "be6c8b4547a7378742f96bf8a13582fa32294ac07e855581146c6ffe1f00ebbf",
+  "native_trace_source_sha256": "ad4f22f5f5cf8041891c64b8702b30439bc54b4f825dfb68140fd7786b659810",
+  "render_contract_sha256": "0bd6657aa8950db6c6e9c6b3280a176f0a362036c2a49f94093960db19c4187f",
+  "input_mesh_sha256": "a8a7d1040b164e6187907bb823bc860ebc339222dc8e56a4a376b51bd409d489",
+  "input_spheres_sha256": "87331dd488feef7c224ef30c3305665e61ef11e4d9501deb3844edcf017d4451",
+  "rgb_sha256_by_threads": {
+    "1": "c98c35c0f205b6946f2c41bcb160cf960c03b60dfcdd61dc8534014e03bae496",
+    "2": "c98c35c0f205b6946f2c41bcb160cf960c03b60dfcdd61dc8534014e03bae496",
+    "4": "c98c35c0f205b6946f2c41bcb160cf960c03b60dfcdd61dc8534014e03bae496"
+  },
+  "linear_pfm_sha256_by_threads": {
+    "2": "24bb35bbe52b6be4988372eb8147fb61688f2568755a9bdc09508b8ce69bac73",
+    "4": "24bb35bbe52b6be4988372eb8147fb61688f2568755a9bdc09508b8ce69bac73"
+  },
+  "linear_pfm_direct_byte_comparison_threads2_threads4_equal": true,
+  "differing_transport_statistics": {},
+  "camera_paths": 2774592,
+  "segments": 14950003,
+  "nonfinite_paths": 0,
+  "threads4_observed_resources": {
+    "process_wall_seconds": 63.43376762600383,
+    "process_cpu_seconds": 55.258921,
+    "peak_rss_kib": 212500,
+    "build_seconds": 8.56821095,
+    "render_seconds": 54.42099559
+  },
+  "scope": "Same native binary, immutable mesh and sphere inputs, warm diffuse/background caches, and visual settings. Decoded RGB matches at one, two and four trace threads. Linear PFM payloads were directly compared at two and four threads and are byte-identical. Per-pixel accumulation is thread-local; recorded transport counters match. Photon mapping is disabled for this take.",
+  "timing_caveat": "Production jobs were draining and competing workloads changed during this check. This comparison verifies payload parity; its timing is not a controlled speedup benchmark.",
+  "source_report_sha256": "e2bc2eb5f00301e6290620b24c85276b41eeaf379851bd7c27e42adf366119a0"
+}

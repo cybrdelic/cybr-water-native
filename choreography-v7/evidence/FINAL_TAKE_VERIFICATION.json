@@ -1,0 +1,146 @@
+{
+  "format": "CYBR native V7 completed take verification 1",
+  "status": "complete_verified_native_export",
+  "movie": {
+    "file": "CYBR_WATERBENDING_DUET_V7_10S.mp4",
+    "sha256": "5e319a8cd6231be032de8e7008a8bb1784bdc0c9389e7c8d0cd8ea8a2d36fcc5",
+    "width": 960,
+    "height": 540,
+    "fps": 24,
+    "duration_s": 10,
+    "frame_range": [
+      0,
+      239
+    ],
+    "native_rendered_frames": 240,
+    "unique_native_frames": 240,
+    "unique_decoded_frames": 240
+  },
+  "verified_export_checks": {
+    "full_movie_decoded": true,
+    "frame_timestamps_verified": true,
+    "native_state_hashes_verified": true,
+    "phase_history_chain_verified": true,
+    "simulation_audit_passed": true,
+    "frame_interpolation": false,
+    "image_generation": false,
+    "denoising": false
+  },
+  "simulation": {
+    "solver": "V6 native APIC/MAC; opt-in V7 DuetGuide",
+    "native_states": 241,
+    "state_frame_range": [
+      0,
+      240
+    ],
+    "raw_state_files": 964,
+    "unique_primary_position_velocity_states": 241,
+    "times_match_24_Hz": true,
+    "finite_primary_and_secondary_values": true,
+    "primary_count": 439624,
+    "unique_primary_ids": true,
+    "primary_ids_and_volumes_identical_across_all_states": true,
+    "initial_volume_m3": 0.43962399889,
+    "final_volume_m3": 0.43962399889,
+    "maximum_primary_volume_change_m3": 0.0,
+    "added_primary_water_m3": 0.0,
+    "outflow_primary_water_m3": 0.0,
+    "maximum_volume_ledger_error_m3": 0.0,
+    "pressure_grid_m": 0.0299999993294,
+    "marker_spacing_m": 0.00999999977648,
+    "guidance_fully_off_after_s": 8.95,
+    "pressure_relative_residual_max": 2.16652009425e-05,
+    "maximum_surface_volume_relative_error": 0.0019822503264865367
+  },
+  "render": {
+    "method": "V6 deterministic Whitted preview; frozen camera, sampling, geometry, optics and native binaries",
+    "base_samples_per_pixel": 4,
+    "adaptive_aa_max": 16,
+    "maximum_path_depth": 20,
+    "branch_weight_cutoff": 0.001,
+    "render_contract_sha256": "0bd6657aa8950db6c6e9c6b3280a176f0a362036c2a49f94093960db19c4187f",
+    "native_binary_sha256": {
+      "surface": "b399043a73d1cff45c2ed2184eb795cfe19165343aba18b259ed88f7f03f6479",
+      "trace_native": "be6c8b4547a7378742f96bf8a13582fa32294ac07e855581146c6ffe1f00ebbf"
+    },
+    "scene_assets_sha256": {
+      "solid.sdf": "671af52d512ffdb24f6e0e01884fe75bfc70ba07aadeea81deb9312c0e86f9b9",
+      "solids.mesh": "edd36d3f65ab23276ccab8fc7053f17ed5d819295f336f9e80e29ec0a8f98d53"
+    }
+  },
+  "native_source_code_sha256": {
+    "simulate.cpp": "c4c20b2c1a92e6910effaea7376cc08328e46f3efbb7215bacce80a4213ec739",
+    "solid_export.cpp": "16bcd6001deca9b8889c69a4c6701f378b68ce75476b68768c5c8e7c37ec25ac",
+    "trace.cpp": "ad4f22f5f5cf8041891c64b8702b30439bc54b4f825dfb68140fd7786b659810",
+    "cinematic_choreography.hpp": "f297ed71b95a45ffdbd7cfc783b4b15a87c728d14c344fca1989e66b58e0b320",
+    "gallery_scenes.hpp": "0b49fd8bed6a40c593767fcdfb8344cc12ae8f7d800db9cc1c4c524089e58617",
+    "gallery_simulate.cpp": "bac175fbd8fd7e3f2499766526fd8ebbc7deb0a7580d74c17e19e855946bf7f4",
+    "fluid.hpp": "148e10ae69e90e0b1db2a8eec411e2c2cfc50ea50635751143bcff039968f0b8",
+    "surface.cpp": "2440837241a3318df7c787b476b75be5ec223a6681e9210ade21e052e0bce1be",
+    "sample_solid.cpp": "5abab26adfa3916f5c83e5c83905051a4d960c7df5d803d4b0e1b68cc6d4c5b0",
+    "gallery_export.cpp": "6ba61524f054246c3236dbe32f2683724c3023eee82169d49f87d5637b8c9d8c",
+    "scene.hpp": "71d0f933bb284027d3ae5e15702a8ae7561ece721a6ac1bbfe63af497d719b7a"
+  },
+  "visual_review": {
+    "scope": "Visual inspection of the listed native still images and eight-frame contact sheet. No continuous video playback is claimed. Complete movie decoding, timestamps and uniqueness are covered separately by VERIFICATION.json.",
+    "observed_progression": [
+      "Twin rising forms and a central figure eight.",
+      "Coiling anticipation and broad staggered sweeping bands.",
+      "Opposed orbital catches and an upright open ring hold.",
+      "A tilted return into an active basin splash with small foreground runoff."
+    ],
+    "corrected_contact_sheet": {
+      "file": "CYBR_WATERBENDING_DUET_SEQUENCE.jpg",
+      "sha256": "bb4df9a49272e3d2b1ce810a96e1b13b0474e1971fff2d93be7f0b40579260aa",
+      "source_frames": [
+        36,
+        72,
+        108,
+        126,
+        150,
+        180,
+        204,
+        234
+      ],
+      "final_return_label": "TILTED RETURN"
+    }
+  },
+  "late_runoff_and_framing": {
+    "states_checked": 241,
+    "primary_centers_fit_through_frame": 226,
+    "primary_first_off_frame": 227,
+    "primary_first_behind_camera_plane": 232,
+    "movie_last_frame_239": {
+      "clipped_primary_centers": 6139,
+      "primary_centers": 439624,
+      "clipped_percent": 1.3964205775844811,
+      "behind_camera_centers": 234
+    },
+    "endpoint_state_240": {
+      "clipped_primary_centers": 6193,
+      "primary_centers": 439624,
+      "clipped_percent": 1.408703801430313,
+      "behind_camera_centers": 236
+    },
+    "maximum_primary_centers_outside_shared_sdf_box": 0,
+    "maximum_secondary_centers_outside_shared_sdf_box": 0,
+    "centers_within_20cm_of_camera_any_state": 0,
+    "scope": "Counts describe cached centers and conservative secondary sphere envelopes, not reconstructed triangle bounds or visible screen area. Off-frame centers do not imply lost liquid volume; the conservation audit records zero domain outflow. Secondary parcels are visual samples, not liquid mass."
+  },
+  "limitations": [
+    "Native movie resolution is 960x540; no upscaling is applied.",
+    "Guide curves are externally forced fantasy control, not unforced natural dynamics.",
+    "Uniform 3cm grid and one-way whitewater; no coupled air or microscopic atomization.",
+    "Preview approximates indirect illumination; not full converged GI.",
+    "Visual inspection covered the recorded stills and contact sheet; continuous video playback review is not claimed.",
+    "The camera audit does not establish full reconstructed mesh bounds or later foam projection coverage."
+  ],
+  "report_sha256": {
+    "VERIFICATION.json": "a61507f0d36f617e44d3662dc625fcd2a0e7e89a8f1edb8e43e6cf6463d0798a",
+    "SIMULATION_AUDIT.json": "abb8bf212aff2b7676a7b3625ababf8116943777fc24a7e0207b5f106fa082d6",
+    "CAMERA_FRAMING_AUDIT.json": "3c5b47a392b161e82a6d9c11f376db5fb0352b2553d33a9eb22f49279d7c6529",
+    "VISUAL_REVIEW.json": "3c1db0238b7d320d0fa47d335070efd4a16b8386133b54ff292f11a4d4e23c1c"
+  },
+  "source_repository": "https://github.com/cybrdelic/cybr-water-native",
+  "production_source_commit": "044528a3dfb09bcc0af5aa1d32eb94184d325c1f"
+}

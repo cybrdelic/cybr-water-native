@@ -6,7 +6,7 @@ A native C++ APIC/MAC liquid solver, anisotropic surface reconstruction, and det
 
 **[Accepted V6 baseline](native-v6/README.md)** preserves the exact source behind the accepted ten-second, 960 x 540 native take. Its solver, reconstruction, coherent optical normals, oriented foam, checkpoint recovery and twelve native test groups are retained.
 
-**[V7 waterbending duet](choreography-v7/README.md)** adds a separately selectable performance: twin rising forms, a figure-eight braid, coiling anticipation, staggered outward strikes, opposed orbital catches, a shield hold, and a spiral return. The original `waterbending_trick` preset remains unchanged; select `waterbending_duet` for the new sequence. The V6 fluid solver, mesher and optical tracer are byte-identical between the two source trees.
+**[V7 waterbending duet](choreography-v7/README.md)** adds a separately selectable performance: twin rising forms, a figure-eight braid, coiling anticipation, broad staggered sweeping bands, opposed orbital catches, an upright open ring hold, and a tilted return into an active basin splash with small foreground runoff. The original `waterbending_trick` preset remains unchanged; select `waterbending_duet` for the new sequence. The V6 fluid solver, mesher and optical tracer are byte-identical between the two source trees.
 
 The controller uses closed periodic curves, smooth time transitions, moving-target velocity/acceleration compensation and bounded pre-projection velocity feedback. It does not teleport particles, manufacture replacement water meshes or add a permanent inlet.
 
