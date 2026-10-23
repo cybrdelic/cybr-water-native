@@ -1,0 +1,43 @@
+name: Readable native source regression
+on:
+  push:
+    branches: [main, feature/v6-native-duet-choreography]
+    paths:
+      - native-v6/**
+      - choreography-v7/**
+      - .github/workflows/native-regression.yml
+  pull_request:
+    paths:
+      - native-v6/**
+      - choreography-v7/**
+      - .github/workflows/native-regression.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        version: [native-v6, choreography-v7]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and run native regression suites
+        env:
+          VERSION: ${{ matrix.version }}
+        run: |
+          set -o pipefail
+          mkdir -p validation
+          test -f "$VERSION/engine/src/fluid.hpp"
+          EXTRA=""
+          if [ "$VERSION" = "choreography-v7" ]; then EXTRA="choreography-checks"; fi
+          make -C "$VERSION/engine" -j2 all checks finish-checks continuation-checks $EXTRA 2>&1 | tee "validation/$VERSION.log"
+          python3 -m py_compile "$VERSION"/*.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-regression-${{ matrix.version }}
+          path: validation/
+          if-no-files-found: ignore
