@@ -1,0 +1,10 @@
+engine/build/
+__pycache__/
+*.pyc
+runs/
+cache/
+rendered/
+mesh_cache/
+scene/
+delivery/
+logs/

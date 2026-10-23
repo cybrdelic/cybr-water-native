@@ -1,0 +1,12 @@
+{
+  "format": "cybr-source-bundle-v1",
+  "compressed_sha256": "ab134036e53ce3bb6b293e7a21858950d96d14d677657e07be34e8dca6946f0b",
+  "parts": ["overlay.000.b64", "overlay.001.b64", "overlay.002.b64", "overlay.003.b64", "overlay.004.b64"],
+  "part_sha256": {
+    "overlay.000.b64": "5de22ea70d7b6c10dd43cb0750d3b2357551e74606b9768089c7ac5dd0899c6d",
+    "overlay.001.b64": "3f097d57ed5d03aa9dc54c57babae3936019650ea1cd03cefe857e449e69b9f9",
+    "overlay.002.b64": "3cb106a87880f26f9ffe6e57ef22c2a36274b9bc0daaf69ec66ff33b2a318aed",
+    "overlay.003.b64": "6b45efafa0647f7b0f2b6f81a2a1a4b9774f9e19f2d497eb852aadf85e9e9d9f",
+    "overlay.004.b64": "7002a03f78fa3ea8e5355620e16f199f997d579057c7a05b2a22216c5867cbfb"
+  }
+}
