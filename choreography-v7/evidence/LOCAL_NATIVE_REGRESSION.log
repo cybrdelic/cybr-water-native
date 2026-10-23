@@ -1,0 +1,38 @@
+g++ -O3 -std=c++17 -fopenmp tests/scene_regression.cpp -o build/scene_regression
+g++ -O3 -std=c++17 -fopenmp tests/solver_checks.cpp -o build/solver_checks
+g++ -O3 -std=c++17 -fopenmp src/trace.cpp -o build/trace
+g++ -O3 -std=c++17 -fopenmp tests/material_splash_checks.cpp -o build/material_splash_checks
+g++ -O3 -std=c++17 -fopenmp tests/fragment_phase_checks.cpp -o build/fragment_phase_checks
+g++ -O3 -std=c++17 -fopenmp tests/retained_guidance_checks.cpp -o build/retained_guidance_checks
+g++ -O3 -std=c++17 -fopenmp tests/splash_boundary_checks.cpp -o build/splash_boundary_checks
+build/solver_checks
+{"passed":true,"quadratic_weight_error":1.05973953168e-07,"quadratic_first_moment_error_m":8.17221401661e-09,"quadratic_second_moment_error_m2":4.76514064318e-10,"pressure_symmetry_relative_error":6.94130356802e-07,"pressure_quadratic_energy":619.960061929,"projection_divergence_ratio":5.05801985957e-06,"merge_volume_error_m3":2.03726813197e-08,"merge_momentum_error_m4_s_inv":1.66454213968e-07,"split_volume_error_m3":2.03726813197e-08,"restart_max_state_error":0,"incompatible_checkpoint_rejected":true,"apic_affine_velocity_error_m_s":4.17232513428e-07,"inlet_divergence_l2_s_inv":3.46957832896e-06,"continuous_solid_clearance_m":0.00200012326241,"masked_inlet_flux_m3_s":0.288000020027,"masked_inlet_attempts":3021,"masked_inlet_rejected_attempts":1517,"masked_inlet_volume_error_m3":6.99999461039e-05,"masked_inlet_marker_volume_m3":0.000125000005588,"masked_inlet_emits_every_interval":true,"masked_inlet_restart_position_error_m":0,"apic_boundary_value_error_m_s":1.12022270571e-07,"apic_boundary_gradient_error_s_inv":4.17232513428e-07,"apic_constant_boundary_gradient_error_s_inv":3.26899835326e-12,"apic_split_affine_error_m_s":3.31634524287e-08,"apic_split_momentum_error_m4_s_inv":2.93303228927e-11,"closed_domain_normal_flux_m_s":0,"closed_domain_tangential_velocity_preserved":true,"closed_domain_fingerprint_distinct":true}
+build/trace --self-test
+{"passed":true,"normal_water_fresnel":0.02037318423,"white_sphere_mean":1,"deterministic_white_furnace":0.9999998212,"deterministic_beer_sphere":0.4555640221,"index_matched_grazing_reflection":0,"diffuse_sh_white_sphere":1.000072837,"beer_sphere_mean":0.455922346,"beer_sphere_analytic":0.4555640221,"nested_air_water":true,"motion_triangle":true,"tiny_closed_tetrahedron":true,"adaptive_origin_sides":true,"near_origin_plane_pair":true,"max_tested_bsdf_energy":0.4780359888}
+build/material_splash_checks
+{"passed":true,"capillary_pressure_Pa":0.598348680791,"analytic_pressure_Pa":0.575999975204,"relative_pressure_error":0.0387998377585,"static_sphere_peak_velocity_m_s":3.8500552364e-06,"capillary_divergence_L2_s_inv":6.90782360313e-06,"domain_growth_preserves_particle_and_affine_bytes":true,"domain_growth_pressure_max_error":0}
+build/fragment_phase_checks
+{"passed":true,"hysteresis_enter_spacing":3.2,"hysteresis_exit_spacing":2.2,"sparse_ligament_preserved":true,"same_state_restart_idempotent":true,"old_count_cutoff_negative_control":true,"isolated_volume_preserved":true}
+build/retained_guidance_checks
+{"passed":true,"closed_guide_error_m":1.93141e-07,"target_speed_max_m_s":2.14271,"feedforward_accel_max_m_s2":19.7409,"transition_velocity_jump_m_s":0.000629563,"feedback_equilibrium_error_m_s":5.96046e-07,"inlet_count":0,"guidance_off_after_s":8.55,"legacy_preserved":true}
+build/splash_boundary_checks
+{"passed":true,"lateral_faces_open":true,"open_marker_not_clamped":true,"open_outflow_recognized":true,"old_wall_negative_control":true,"inlet_count":0,"max_post_release_guidance":0}
+build/scene_regression
+{"passed":true,"scope":"Short coarse numerical smoke tests, not visual qualification","scenes":[{"name":"beach","dx_m":0.0900000035763,"time_s":0.12,"particles":14296,"volume_ledger_error_m3":0,"pressure_relative_residual":1.86664221787e-05,"finite":true},{"name":"waterbending","dx_m":0.0900000035763,"time_s":0.12,"particles":3116,"volume_ledger_error_m3":0,"pressure_relative_residual":1.73335854581e-05,"finite":true},{"name":"drop","dx_m":0.00450000027195,"time_s":0.12,"particles":19226,"volume_ledger_error_m3":0,"pressure_relative_residual":9.310388969e-06,"finite":true},{"name":"whirlpool","dx_m":0.0495000034571,"time_s":0.12,"particles":4752,"volume_ledger_error_m3":0,"pressure_relative_residual":7.77570389607e-06,"finite":true},{"name":"rockimpact","dx_m":0.0900000035763,"time_s":0.12,"particles":7902,"volume_ledger_error_m3":0,"pressure_relative_residual":8.29141770576e-06,"finite":true},{"name":"jets","dx_m":0.0900000035763,"time_s":0.12,"particles":3625,"volume_ledger_error_m3":0,"pressure_relative_residual":4.98698007324e-06,"finite":true},{"name":"cascade","dx_m":0.0900000035763,"time_s":0.12,"particles":2058,"volume_ledger_error_m3":0,"pressure_relative_residual":5.02488257582e-06,"finite":true},{"name":"waterbending_trick","dx_m":0.0900000035763,"time_s":0.12,"particles":4884,"volume_ledger_error_m3":0,"pressure_relative_residual":1.91627817305e-05,"finite":true}]}
+g++ -O3 -std=c++17 -fopenmp tests/coherent_finish_checks.cpp -o build/coherent_finish_checks
+g++ -O3 -std=c++17 -fopenmp tests/topology_normals_checks.cpp -o build/topology_normals_checks
+g++ -O3 -std=c++17 -fopenmp tests/normal_continuity_checks.cpp -o build/normal_continuity_checks
+build/coherent_finish_checks
+{"passed":true,"normal_configurations":80096,"min_reflection_geometric_cosine":5.45382499695e-06,"min_transmission_geometric_cosine":0.0695569589734,"max_furnace_error":3.0971480669e-07,"adaptive_sample_locations_unique":true,"foam_projected_area_relative_error":0.0113332448982,"foam_bound_change_max_opacity_error":7.21774995327e-09}
+build/topology_normals_checks
+{"passed":true,"triangles":576,"opposite_sheet_separation_m":0.002,"max_vertex_displacement_m":0,"min_original_normal_dot":0.981558,"positions_bit_identical":true}
+build/normal_continuity_checks
+{"passed":true,"pairs":1344000,"input_angle_step_degrees":0.01,"max_corrected_normal_step_norm":0.000340214,"worst_view_deg":40,"worst_normal_tilt_deg":79.96,"worst_azimuth_deg":30}
+g++ -O3 -std=c++17 -fopenmp tests/foam_surface_checks.cpp -o build/foam_surface_checks
+g++ -O3 -std=c++17 -fopenmp tests/domain_growth_replay_checks.cpp -o build/domain_growth_replay_checks
+build/foam_surface_checks
+{"passed":true,"same_side_coverage":0.00195121893194,"opposite_side_coverage":0,"negative_control_leak":0.0018553402042,"projected_area_relative_error":0.0113332448982,"world_lattice_opacity_error":0}
+build/domain_growth_replay_checks
+{"passed":true,"growth_next_step_max_error":0,"checkpoint_next_step_max_error":0,"primary_markers":4386}
+build/choreography_checks
+{"passed":true,"closed_curve_max_error_m":3.74683e-07,"max_target_speed_m_s":4.23341,"max_feedforward_acceleration_m_s2":42,"transition_velocity_jump_m_s":0.0141241,"minimum_beat_shape_difference_m":0.49289,"release_end_s":8.95,"v6_preset_preserved":true,"inlets":0,"closed_lateral_faces":0}
