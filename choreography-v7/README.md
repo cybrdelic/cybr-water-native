@@ -10,9 +10,9 @@ An opt-in choreography upgrade on the accepted V6 solver, mesher and dielectric 
 | 0.90-2.15 | Two separated rising cobra forms |
 | 2.15-3.65 | Figure-eight braid with depth-separated crossings |
 | 3.65-4.55 | Coiling anticipation |
-| 4.55-5.70 | Alternating narrow whip sweeps, 0.20 s apart |
+| 4.55-5.70 | Broad staggered sweeping bands, 0.20 s apart |
 | 5.70-6.65 | Opposed tilted orbital catches |
-| 6.65-7.80 | Convergence into a shield with a readable hold |
+| 6.65-7.80 | Convergence into an upright open ring with a readable hold |
 | 7.80-8.95 | Tilted spiral return with staggered release |
 | 8.95-10.00 | Guidance exactly zero; native gravity/pressure/collisions |
 

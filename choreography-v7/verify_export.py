@@ -98,7 +98,7 @@ def main()->None:
  'max_surface_volume_relative_error':max(r['surface']['relative_volume_error'] for r in rows),
  'guidance_fully_off_after_s':8.95,'render':'V6 deterministic Whitted preview; overcast dielectric, oriented foam, adaptive 4-16 samples',
  'source_code_sha256':source,'native_frame_rgb_sha256':hashes,'decoded_frame_md5':dh,
- 'limitations':['Review movie resolution is stated above, not upscaled 960x540.','Guide curves are externally forced fantasy control, not unforced natural dynamics.','Uniform 3cm grid and one-way whitewater; no coupled air or microscopic atomization.','Preview approximates indirect illumination; not full converged GI.']}
+ 'limitations':[f'Native movie resolution is {w}x{h}; no upscaling is applied.','Guide curves are externally forced fantasy control, not unforced natural dynamics.','Uniform 3cm grid and one-way whitewater; no coupled air or microscopic atomization.','Preview approximates indirect illumination; not full converged GI.']}
  result['render_contract_sha256']=contract_sha;result['render_contract']=contract
  result['simulation_audit_sha256']=sha(audit_path);result['simulation_audit_passed']=True
  result['native_state_hashes_verified']=True;result['phase_history_chain_verified']=True
@@ -107,7 +107,7 @@ def main()->None:
  result['marker_spacing_m']=float(json.loads((take/'cache/manifest.json').read_text())['marker_spacing_m'])
  temp.replace(movie);result['sha256']=sha(movie)
  verification_tmp=delivery/'VERIFICATION.json.tmp';verification_tmp.write_text(json.dumps(result,indent=2)+'\n');verification_tmp.replace(delivery/'VERIFICATION.json')
- picks=[36,72,108,126,150,180,204,234];labels=['DRAW / LIFT','FIGURE EIGHT','COIL','STAGGERED STRIKES','ORBITAL CATCH','SHIELD','SPIRAL RETURN','FREE SPLASH']
+ picks=[36,72,108,126,150,180,204,234];labels=['DRAW / LIFT','FIGURE EIGHT','COIL','STAGGERED SWEEPS','ORBITAL CATCH','RING HOLD','SPIRAL RETURN','FREE SPLASH']
  tw=384;th=round(h*tw/w);board=Image.new('RGB',(4*tw,2*(th+28)),(13,20,25));d=ImageDraw.Draw(board)
  for k,(i,label) in enumerate(zip(picks,labels)):
   x=(k%4)*tw;y=(k//4)*(th+28)
