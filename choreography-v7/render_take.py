@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse, concurrent.futures, hashlib, json, os, subprocess, time
 from pathlib import Path
 from PIL import Image
+from render_contract import make_contract, freeze_contract, check_receipt
 ROOT=Path(__file__).resolve().parent
 
 def sha(path:Path)->str:
@@ -34,22 +35,26 @@ def main()->None:
  b=ROOT/'engine/build';previous=None;futures=set();start=time.monotonic()
  source={p.name:sha(p) for p in (ROOT/'engine/src').glob('*') if p.is_file()}
  preset=json.loads((take/'cache/gallery_scene.json').read_text());camera=','.join(map(str,preset['camera']));target=','.join(map(str,preset['target']))
- def render(i:int,mesh:Path,spheres:Path,geometry:dict,source_record:dict)->None:
-  name=f'frame_{i:06d}';stem=work/name;png=out/(name+'.png')
-  cmd=[str(b/'trace_native'),'--water',str(mesh),'--spheres',str(spheres),'--solids',str(assets/'solids.mesh'),'--out',str(stem),
+ def render_command(mesh:Path,spheres:Path,stem:Path)->list[str]:
+  return [str(b/'trace_native'),'--water',str(mesh),'--spheres',str(spheres),'--solids',str(assets/'solids.mesh'),'--out',str(stem),
        '--width',str(a.width),'--height',str(a.height),'--spp',str(a.samples),'--bounces','20','--branch-cutoff','.001',
        '--threads','1','--camera',camera,'--target',target,'--fov',str(preset['vertical_fov_degrees']),
        '--aperture','0','--environment','overcast','--sky-power','1.2','--sun-power','0','--deterministic-preview',
        '--absorption','.18,.045,.025','--wet-level','.20','--wet-reach','.10','--coherent-normals','--oriented-foam',
        '--adaptive-aa',str(a.adaptive_aa),'--aa-threshold','.035','--diffuse-samples','24',
        '--diffuse-cache',str(out/'static_diffuse.bin'),'--background-cache',str(out/'immutable_background.bin')]
+ contract=make_contract(source,render_command(work/'identity.mesh',work/'identity.csv',work/'identity'),assets)
+ freeze_contract(out,contract)
+ def render(i:int,mesh:Path,spheres:Path,geometry:dict,source_record:dict)->None:
+  name=f'frame_{i:06d}';stem=work/name;png=out/(name+'.png')
+  cmd=render_command(mesh,spheres,stem)
   run(cmd,logs/(name+'_trace.log'));report=json.loads(stem.with_suffix('.json').read_text())
   if report['nonfinite_paths'] or report['finite_pixels']!=a.width*a.height:raise RuntimeError(f'Nonfinite frame {i}')
   with Image.open(stem.with_suffix('.ppm')) as image:
    if image.size!=(a.width,a.height):raise RuntimeError('Wrong size')
    rgb_sha=hashlib.sha256(image.tobytes()).hexdigest();image.save(png)
   receipt={'frame':i,'time_s':i/24,'selected_frame_review':selected,'png_sha256':sha(png),'rgb_sha256':rgb_sha,
-           'source_states':source_record,'source_code_sha256':source,'surface':geometry,'render':report,'command':cmd}
+           'source_states':source_record,'source_code_sha256':source,'render_contract_sha256':sha(out/'render_contract.json'),'surface':geometry,'render':report,'command':cmd}
   tmp=out/(name+'.json.tmp');tmp.write_text(json.dumps(receipt,indent=2));tmp.rename(out/(name+'.json'))
   for f in work.glob(name+'*'):f.unlink()
   print(json.dumps({'frame':i,'elapsed_s':time.monotonic()-start,'surface_s':geometry['seconds'],'trace_s':report['render_seconds'],'triangles':geometry['triangles']}),flush=True)
@@ -66,6 +71,7 @@ def main()->None:
    receipt=out/(name+'.json');png=out/(name+'.png')
    if receipt.exists() and png.exists() and phase.exists():
     saved=json.loads(receipt.read_text())
+    check_receipt(saved,contract)
     if saved['source_code_sha256']!=source or saved['png_sha256']!=sha(png):raise RuntimeError('Stale render: '+name)
     if saved['render'].get('width') not in (None,a.width):raise RuntimeError('Resume resolution mismatch')
     if Image.open(png).size!=(a.width,a.height):raise RuntimeError('Resume resolution mismatch')

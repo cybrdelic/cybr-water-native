@@ -35,6 +35,9 @@ jobs:
           if [ "$VERSION" = "choreography-v7" ]; then EXTRA="choreography-checks"; fi
           make -C "$VERSION/engine" -j2 all checks finish-checks continuation-checks $EXTRA 2>&1 | tee "validation/$VERSION.log"
           python3 -m py_compile "$VERSION"/*.py
+          if [ "$VERSION" = "choreography-v7" ]; then
+            python3 -m unittest discover -s "$VERSION/tests" -v 2>&1 | tee "validation/render-contract.log"
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
