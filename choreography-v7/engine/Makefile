@@ -96,3 +96,10 @@ choreography-checks: build/choreography_checks build/duet_query_checks
 # Exact-query equivalence is an additional release gate, not a looser tolerance.
 build/duet_query_checks: tests/duet_query_checks.cpp src/cinematic_choreography.hpp src/fluid.hpp | build
 	$(CXX) $(CXXFLAGS) $< -o $@
+
+
+build/combat_choreography_checks: tests/combat_choreography_checks.cpp src/gallery_scenes.hpp src/fluid.hpp | build src/cinematic_choreography.hpp
+	$(CXX) $(CXXFLAGS) $< -o $@
+.PHONY: combat-checks
+combat-checks: build/combat_choreography_checks
+	build/combat_choreography_checks
