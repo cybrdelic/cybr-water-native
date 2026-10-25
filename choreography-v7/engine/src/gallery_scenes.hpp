@@ -686,7 +686,18 @@ inline Preset combatWaterbendingPreset() {
     return preset;
 }
 
+inline Preset martialWaterbendingPreset() {
+    Preset preset=waterbendingTrickPreset();auto &scene=preset.scene;scene.name="waterbending_martial_v10";
+    LoopGuide seedGuide;scene.initialLiquidSdf=[seedGuide](Vec3 p){float r=std::sqrt((p.x/.95f)*(p.x/.95f)+(p.z/.72f)*(p.z/.72f));float basin=std::max({p.y-.285f,-.11f-p.y,r-.98f});float theta=seedGuide.angle(p);float crescent=std::max({seedGuide.distance(p)-.052f,(-1.68f-theta)*.52f,(theta+.72f)*.52f});return std::min(basin,crescent);};
+    scene.initialVelocity=[seedGuide](Vec3 p){float theta=seedGuide.angle(p);if(theta>=-1.75f&&theta<=-.62f&&seedGuide.distance(p)<.090f)return seedGuide.velocity(theta)*.54f;return Vec3{};};
+    auto controller=std::make_shared<choreography::MartialGuide>();controller->prepare(0);scene.prepareForces=[controller](double t){controller->prepare(t);};scene.velocityGuide=[controller](Vec3 p,double t){return controller->sample(p,t);};scene.extraAccelerationBound=94.f;
+    preset.camera={1.80f,1.45f,4.78f};preset.target={0,.82f,-.12f};preset.verticalFov=31.f;
+    preset.forceNotes="V10 experimental body-driven waterbending: virtual left/right hand trajectories drive scoop, whip, redirect, slice, wave, vortex, counter-rotation and slam through bounded pre-projection velocity feedback. No hand or guide geometry is rendered and no liquid source is added.";
+    preset.timingNotes="Scoop 0-1.25; whip 1.25-2.45; redirect 2.45-3.45; slice 3.45-4.45; wave 4.45-5.65; vortex 5.65-7; counter 7-8; slam 8-9; free splash 9-10.";return preset;
+}
+
 inline Preset makePreset(const std::string &name) {
+    if(name=="waterbending_martial" || name=="waterbending_martial_v10")return martialWaterbendingPreset();
     if(name=="waterbending_combat" || name=="waterbending_combat_v8")return combatWaterbendingPreset();
     if(name=="waterbending_duet" || name=="waterbending_duet_v7")return cinematicWaterbendingPreset();
     if(name=="legacy_trick")return legacyWaterbendingTrickPreset();
