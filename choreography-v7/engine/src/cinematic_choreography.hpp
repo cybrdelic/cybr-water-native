@@ -364,4 +364,57 @@ struct CombatGuide {
     }
 };
 
+
+struct MartialGuide {
+    static constexpr float pi=3.14159265358979323846f;
+    static constexpr float releaseEnd=9.0f;
+    float time=0;
+    struct Hand {Vec3 p{},v{},palm{};};
+    static float ease(float a,float b,float t){float x=clamp((t-a)/(b-a),0.f,1.f);return x*x*x*(x*(x*6.f-15.f)+10.f);}
+    static Vec3 lerp(Vec3 a,Vec3 b,float t){return a*(1-t)+b*t;}
+    static Vec3 limit(Vec3 v,float m){float n=length(v);return n>m?v*(m/n):v;}
+    static Vec3 handPos(int side,float t){
+        float s=side?1.f:-1.f;
+        if(t<1.25f){float q=ease(0,1.25f,t);float a=-1.15f+1.55f*q;return {s*(.36f+.17f*std::cos(a)),.34f+.82f*q+.18f*std::sin(a),.10f+.20f*std::sin(a)};}
+        if(t<2.45f){float q=ease(1.25f,2.45f,t);return side?lerp({.32f,1.04f,.10f},{1.26f,1.18f,-.04f},q):lerp({-.32f,.98f,.10f},{-.08f,.70f,.28f},q);}
+        if(t<3.45f){float q=ease(2.45f,3.45f,t);float a=(side?1.f:-1.f)*(1.2f*pi*q);return {s*.48f+.48f*std::cos(a),.90f+.32f*std::sin(a),.15f*std::sin(2*a)};}
+        if(t<4.45f){float q=ease(3.45f,4.45f,t);return side?lerp({.62f,.92f,.08f},{-1.10f,1.22f,-.18f},q):lerp({-.62f,.82f,.08f},{1.08f,.72f,-.18f},q);}
+        if(t<5.65f){float q=ease(4.45f,5.65f,t);return {s*(.50f-.20f*q),1.00f-.54f*q,.26f-.82f*q};}
+        if(t<7.0f){float q=ease(5.65f,7.0f,t);float a=(side?1.f:-1.f)*(2.2f*pi*q);return {.48f*std::cos(a),.88f+.46f*std::sin(a),-.18f+.48f*std::sin(a)};}
+        if(t<8.0f){float q=ease(7.0f,8.0f,t);float a=(side?-1.f:1.f)*(1.6f*pi*q);return {.34f*std::cos(a),.96f+.30f*std::sin(a),-.18f+.34f*std::sin(a)};}
+        float q=ease(8.0f,8.82f,t);return lerp({s*.35f,.98f,-.12f},{s*.12f,.30f,-.52f},q);
+    }
+    static Hand hand(int side,float t){float dt=.0035f;Vec3 p=handPos(side,t),a=handPos(side,t-dt),b=handPos(side,t+dt);Vec3 v=(b-a)/(2*dt);Vec3 palm=normalized(Vec3(side?-.25f:.25f,-.12f,-1.f));return {p,v,palm};}
+    static float segment(Vec3 p,Vec3 a,Vec3 b,Vec3 &foot,Vec3 &tan){Vec3 e=b-a;float f=clamp(dot(p-a,e)/std::max(dot(e,e),1e-7f),0.f,1.f);foot=a+e*f;tan=normalized(e);return length(p-foot);}
+    void prepare(double seconds){time=float(seconds);}
+    static const char* beat(float t){if(t<1.25f)return "scoop";if(t<2.45f)return "whip";if(t<3.45f)return "redirect";if(t<4.45f)return "slice";if(t<5.65f)return "wave";if(t<7.f)return "vortex";if(t<8.f)return "counter";if(t<9.f)return "slam";return "splash";}
+    VelocityGuide sample(Vec3 p,double) const {
+        VelocityGuide g;if(time>=releaseEnd||p.y<.02f||p.y>2.7f||std::abs(p.x)>2.35f||std::abs(p.z)>1.85f)return g;
+        auto bell=[](float x,float in,float out){x=std::abs(x);if(x>=out)return 0.f;if(x<=in)return 1.f;float q=(x-in)/(out-in);q=q*q*(3-2*q);return 1-q;};
+        auto radial=[](Vec3 q){Vec3 r{q.x,0,q.z};float n=length(r);return n>1e-5f?r/n:Vec3(1,0,0);};
+        auto tang=[&](Vec3 q,float sign){Vec3 r=radial(q);return Vec3(-r.z,0,r.x)*sign;};
+        std::string st=beat(time);Vec3 sum{},acc{};float total=0,rate=0;
+        auto add=[&](Vec3 v,float w){if(w>1e-6f){sum+=v*w;total+=w;}};
+        Hand L=hand(0,time),R=hand(1,time);
+        if(st=="scoop"||st=="whip"||st=="redirect"){
+            for(int h=0;h<2;h++){
+                Hand H=h?R:L;Vec3 root{h?.28f:-.28f,.18f,.05f},foot,tan;float d=segment(p,root,H.p,foot,tan);
+                float tube=bell(d,0,st=="whip"?.18f:.23f)*bell(p.y-.72f,0,1.15f);Vec3 conf=(foot-p)*5.0f;Vec3 desired=H.v+tan*(st=="whip"?2.15f:1.20f)+conf;
+                if(st=="whip"&&h==1)desired+=H.palm*3.35f*ease(1.45f,2.30f,time);
+                if(st=="redirect")desired+=tang(p-Vec3(0,.85f,0),-1.f)*1.9f;
+                add(desired,tube*(h?1.0f:.78f));
+            }
+            rate=20.f;acc+=Vec3(0,9.81f,0)*std::min(total,1.f);
+        }else if(st=="slice"){
+            float q=ease(3.45f,4.45f,time);Vec3 mid=(L.p+R.p)*.5f;Vec3 line=normalized(R.p-L.p);Vec3 n=normalized(Vec3(.08f,.22f,1));Vec3 rel=p-mid;float dline=length(rel-line*dot(rel,line));float sheet=bell(dot(rel,n),0,.12f)*bell(dline,0,.88f);Vec3 sweep=(L.v+R.v)*.5f+Vec3(3.6f-7.2f*q,.22f,-.38f);add(sweep-n*dot(rel,n)*16.f,sheet*1.45f);rate=24.f;acc+=Vec3(0,8.5f,0)*sheet;
+        }else if(st=="wave"){
+            float q=ease(4.45f,5.65f,time);float low=bell(p.y-.26f,0,.58f)*bell(p.x,0,1.65f)*bell(p.z+.05f,0,1.22f);float z=.30f-1.12f*q;float crest=bell(p.z-z,0,.34f)*bell(p.y-.60f,0,.78f)*bell(p.x,0,1.60f);float w=std::max(.72f*low,1.35f*crest);add(Vec3(0,2.1f*crest*(1-.5f*q),-3.0f-1.2f*q),w);rate=17.f;acc+=Vec3(0,4.5f,0)*w;
+        }else if(st=="vortex"||st=="counter"){
+            Vec3 c{0,.80f,-.20f},qv=p-c;float r=std::sqrt(qv.x*qv.x+qv.z*qv.z);float ann=bell(r-.45f,0,.25f)*bell(p.y-.95f,0,1.08f);float sign=st=="vortex"?1.f:-1.f;Vec3 v=-radial(qv)*(st=="vortex"?1.45f:1.85f)+tang(qv,sign)*(st=="vortex"?3.75f:3.35f)+Vec3(st=="counter"?.55f:0,st=="vortex"?1.8f:.15f,st=="counter"?-.65f:0);add(v,ann*1.55f);rate=21.f;acc+=Vec3(0,9.81f,0)*ann;
+        }else if(st=="slam"){
+            float q=ease(8.0f,8.82f,time);float body=bell(p.y-.88f,0,1.18f)*bell(p.x,0,1.62f)*bell(p.z+.12f,0,1.18f);float rel=1-ease(8.72f,9.f,time);add(Vec3(.1f*(1-q),-2.75f-2.1f*q,-1.45f-1.55f*q),body*rel*1.55f);rate=22.f;acc+=Vec3(0,-5.8f*q,0)*body*rel;
+        }
+        if(total<=1e-6f)return VelocityGuide{};g.target=limit(sum/std::max(total,1.f),5.8f);g.rate=rate*std::min(1.f,total);g.acceleration=limit(acc/std::max(total,1.f),58.f);g.accelerationLimit=88.f;return g;
+    }
+};
 }} // namespace water::choreography
