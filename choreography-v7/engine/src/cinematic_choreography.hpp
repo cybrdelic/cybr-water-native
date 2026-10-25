@@ -227,50 +227,67 @@ struct CombatGuide {
     }
     static Pose pose(int branch,float u,float t){
         float side=branch?-1.f:1.f;
-        float a=tau*u,c=std::cos(a),s=std::sin(a);
-        float upper=.5f+.5f*s;
-        Pose pool{{side*.32f+.23f*c,.17f,.23f*s},{0,1,0},.28f};
+        auto bezier=[](Vec3 p0,Vec3 p1,Vec3 p2,Vec3 p3,float q){float r=1-q;return p0*(r*r*r)+p1*(3*r*r*q)+p2*(3*r*q*q)+p3*(q*q*q);};
+        auto closeOpen=[&](Vec3 root,Vec3 tip,Vec3 visible,float vf=.62f){
+            if(u<=vf)return visible;
+            Vec3 hiddenTip{tip.x,.10f,-1.62f-.08f*side},hiddenRoot{root.x,.10f,-1.62f-.08f*side};
+            if(u<.73f)return lerp(tip,hiddenTip,ease(vf,.73f,u));
+            if(u<.91f)return lerp(hiddenTip,hiddenRoot,ease(.73f,.91f,u));
+            return lerp(hiddenRoot,root,ease(.91f,1.f,u));
+        };
+        float vf=.62f,q=clamp(u/vf,0.f,1.f);
+        Vec3 poolRoot{side*.24f,.18f,side*.11f};
+        Vec3 poolTip{side*.48f,.18f,side*.11f};
+        Vec3 poolVisible=lerp(poolRoot,poolTip,q);
+        Pose pool{closeOpen(poolRoot,poolTip,poolVisible),{0,1,0},.24f};
 
-        float lag=branch*.13f;
-        float whipSwing=ease(.78f+lag,1.65f+lag,t);
-        float whipReach=.72f+.48f*whipSwing;
-        Pose whip{{side*(.28f+whipReach*c),.77f+.53f*s+.14f*(1-c*c),
-                   side*.16f+.055f*std::sin(2*a)}, {0,0,1},1.55f};
+        float lag=branch*.13f,sw=ease(.70f+lag,1.58f+lag,t);
+        Vec3 whipRoot{side*.23f,.27f,side*.20f};
+        Vec3 whipTip{side*(.80f+.50f*sw),1.08f+.26f*std::sin(pi*sw),side*(.26f+.06f*sw)};
+        Vec3 whipVisible=bezier(whipRoot,{side*.36f,.78f,side*.20f},{side*(.56f+.34f*sw),1.46f,side*.24f},whipTip,q);
+        float whipFlow=2.05f*(1-ease(.48f,.62f,u));
+        Pose whip{closeOpen(whipRoot,whipTip,whipVisible),{0,0,1},whipFlow};
 
-        float sliceTilt=side*.58f;
-        Vec3 sliceBase{1.18f*c,.96f+.10f*s,side*.25f+.05f*std::sin(2*a)};
-        Vec3 sliceP=rotateY(sliceBase,sliceTilt);
-        if(branch) sliceP.y=.92f+.52f*c+.10f*s;
-        Pose slice{sliceP,normalized(branch?Vec3(.28f,.87f,.40f):Vec3(0,.18f,1)),1.95f};
+        Vec3 s0,s1;
+        if(!branch){s0={-1.34f,.92f,.18f};s1={1.34f,.92f,.18f};}
+        else{s0={-1.08f,.48f,-.20f};s1={1.08f,1.48f,-.20f};}
+        Vec3 sliceVisible=lerp(s0,s1,ease(0,1,q));
+        float sliceFlow=2.30f*(1-ease(.50f,.62f,u));
+        Pose slice{closeOpen(s0,s1,sliceVisible),normalized(branch?Vec3(.22f,.74f,.64f):Vec3(0,.06f,1)),sliceFlow};
 
-        float wavePush=ease(3.35f,4.70f,t);
-        float theta=a+(branch?pi:0.f);
-        Pose wave{{.95f*std::cos(theta),.56f+.62f*std::sin(theta),
-                   .38f-.86f*wavePush+.08f*std::sin(2*theta)},
-                  normalized(Vec3(0,.16f,1)),.92f};
+        float push=ease(3.32f,4.68f,t);
+        float x0=branch?0.f:-1.28f,x1=branch?1.28f:0.f;
+        Vec3 w0{x0,.22f,.42f-.98f*push},w1{x1,.22f,.42f-.98f*push};
+        float wx=x0+(x1-x0)*q;
+        Vec3 waveVisible{wx,.22f+.98f*std::sin(pi*q),.42f-.98f*push+side*.035f};
+        Pose wave{closeOpen(w0,w1,waveVisible),normalized(Vec3(0,.10f,1)),1.15f};
 
-        float va=2.0f*a+side*.72f;
-        float vr=.40f+.10f*std::sin(a);
-        Pose vortex{{vr*std::cos(va),.87f+.58f*s,vr*std::sin(va)},
-                     normalized(Vec3(std::cos(va),0,std::sin(va))),1.38f};
+        Vec3 vroot{side*.25f,.20f,side*.08f};
+        float va=(2.25f*tau*q)+side*.75f,vr=.43f;
+        Vec3 vortexVisible{vr*std::cos(va),.24f+1.28f*q,vr*std::sin(va)};
+        Vec3 vtip{vr*std::cos(2.25f*tau+side*.75f),1.52f,vr*std::sin(2.25f*tau+side*.75f)};
+        if(q<.10f)vortexVisible=lerp(vroot,vortexVisible,ease(0,.10f,q));
+        Pose vortex{closeOpen(vroot,vtip,vortexVisible),normalized(Vec3(std::cos(va),0,std::sin(va))),1.55f};
 
-        float lx=-.60f+1.75f*upper;
-        float la=3.0f*a+side*pi*.5f;
-        Pose lance{{lx,1.03f+.22f*std::cos(la),side*.10f+.22f*std::sin(la)},
-                    normalized(Vec3(0,std::cos(la),std::sin(la))),1.72f};
+        Vec3 lroot{-.72f,.98f,side*.06f};
+        float la=3.f*tau*q+side*pi*.5f;
+        Vec3 lanceVisible{-.72f+2.05f*q,1.02f+.18f*std::cos(la),side*.06f+.18f*std::sin(la)};
+        Vec3 ltip{1.33f,1.02f+.18f*std::cos(3.f*tau+side*pi*.5f),side*.06f+.18f*std::sin(3.f*tau+side*pi*.5f)};
+        float lanceFlow=2.05f*(1-ease(.50f,.62f,u));
+        Pose lance{closeOpen(lroot,ltip,lanceVisible),normalized(Vec3(0,std::cos(la),std::sin(la))),lanceFlow};
 
-        float slamPhase=ease(7.72f,8.62f,t);
-        float sa=a+side*.36f;
-        Pose slam{{.62f*c,.98f-.63f*slamPhase+.32f*s,
-                   .22f*std::sin(sa)-.34f*slamPhase},
-                   normalized(Vec3(0,.72f,-.69f)),.52f};
+        float slam=ease(7.72f,8.62f,t);
+        Vec3 slamRoot{side*.55f,1.18f,side*.12f},slamTip{side*.16f,.22f,-.42f};
+        Vec3 slamVisible=bezier(slamRoot,{side*.75f,1.34f,side*.05f},{side*.48f,.48f,-.30f},slamTip,q);
+        slamVisible.y-=.18f*slam;
+        Pose slamPose{closeOpen(slamRoot,slamTip,slamVisible),normalized(Vec3(0,.72f,-.69f)),.62f};
 
-        Pose p=blend(pool,whip,ease(.18f,.92f,t));
-        p=blend(p,slice,ease(2.05f,2.62f,t));
-        p=blend(p,wave,ease(3.32f,3.88f,t));
-        p=blend(p,vortex,ease(4.86f,5.34f,t));
-        p=blend(p,lance,ease(6.35f,6.82f,t));
-        p=blend(p,slam,ease(7.72f,8.22f,t));
+        Pose p=blend(pool,whip,ease(.15f,.82f,t));
+        p=blend(p,slice,ease(1.98f,2.72f,t));
+        p=blend(p,wave,ease(3.28f,3.98f,t));
+        p=blend(p,vortex,ease(4.78f,5.42f,t));
+        p=blend(p,lance,ease(6.28f,6.92f,t));
+        p=blend(p,slamPose,ease(7.68f,8.28f,t));
         return p;
     }
     void prepare(double seconds){
@@ -325,21 +342,25 @@ struct CombatGuide {
         VelocityGuide g;if(time>=releaseEnd||p.y<.035f||p.y>2.65f||std::abs(p.x)>2.2f||std::abs(p.z)>1.65f)return g;
         std::array<Hit,2> h{nearest(p,0),nearest(p,1)};float minimum=std::min(h[0].d2,h[1].d2),total=0;Vec3 target{},feed{};
         std::string stage=beat(time);
-        float captureOuter=(stage=="wave_push"||stage=="vortex_gather")?.58f:.46f;
-        for(int b=0;b<2;b++){
+        float captureOuter=.24f;
+        if(stage=="wave_push")captureOuter=.45f;
+        else if(stage=="vortex_gather")captureOuter=.18f;
+        else if(stage=="dual_whips")captureOuter=.13f;
+        else if(stage=="cross_slices")captureOuter=.11f;
+        else if(stage=="spiral_lance")captureOuter=.13f;        for(int b=0;b<2;b++){
             const auto&k=h[b].k;float d=std::sqrt(h[b].d2);
             float comp=std::exp(-std::min(60.f,(h[b].d2-minimum)/.009f));
             float w=comp*(1-ease(.18f,captureOuter,d))*release[b]*ease(0,.22f,time);if(w<1e-7f)continue;
             Vec3 offset=k.p-p;offset-=k.tangent*dot(offset,k.tangent);
-            float thinGain=(stage=="cross_slices")?15.f:10.f;
-            float normalGain=(stage=="wave_push")?2.7f:4.2f;
+            float thinGain=(stage=="cross_slices")?28.f:(stage=="spiral_lance"?24.f:(stage=="dual_whips"?24.f:14.f));
+            float normalGain=(stage=="wave_push")?3.0f:(stage=="vortex_gather"?7.0f:6.2f);
             Vec3 confinement=offset*normalGain+k.thin*(dot(offset,k.thin)*thinGain);
             Vec3 desired=k.v+k.tangent*k.circulation+confinement;
             target+=desired*w;feed+=(Vec3(0,9.81f,0)+k.a+k.curvature*(k.circulation*k.circulation))*w;total+=w;
         }
         if(total<=1e-7f)return g;
         float cap=(stage=="dual_whips"||stage=="spiral_lance")?5.4f:4.8f;
-        g.target=limit(target/total,cap);g.rate=24.f*std::min(1.f,total);g.acceleration=limit(feed/std::max(1.f,total),48.f);g.accelerationLimit=72.f;return g;
+        g.target=limit(target/total,cap);float feedback=(stage=="wave_push")?19.f:15.f;g.rate=feedback*std::min(1.f,total);g.acceleration=limit(feed/std::max(1.f,total),48.f);g.accelerationLimit=72.f;return g;
     }
 };
 
