@@ -673,7 +673,21 @@ inline Preset cinematicWaterbendingPreset() {
     return preset;
 }
 
+inline Preset combatWaterbendingPreset() {
+    Preset preset=waterbendingTrickPreset();auto &scene=preset.scene;
+    scene.name="waterbending_combat_v8";
+    auto controller=std::make_shared<choreography::CombatGuide>();controller->prepare(0);
+    scene.prepareForces=[controller](double t){controller->prepare(t);};
+    scene.velocityGuide=[controller](Vec3 p,double t){return controller->sample(p,t);};
+    scene.extraAccelerationBound=88.f;
+    preset.camera={1.70f,1.48f,4.85f};preset.target={0,.83f,-.08f};preset.verticalFov=32.f;
+    preset.forceNotes="V8 combat waterbending: dual whips, crossed slices, broad wave push, rotating vortex gather, spiral lance, descending slam, then unforced splash. Moving-curve velocity feedback only; no particle teleportation, hidden water source, or rendered guide geometry.";
+    preset.timingNotes="Draw 0-.75; dual whips .75-2.15; crossed slices 2.15-3.45; wave push 3.45-4.95; vortex 4.95-6.45; spiral lance 6.45-7.80; slam 7.80-9.05; free splash 9.05-10.";
+    return preset;
+}
+
 inline Preset makePreset(const std::string &name) {
+    if(name=="waterbending_combat" || name=="waterbending_combat_v8")return combatWaterbendingPreset();
     if(name=="waterbending_duet" || name=="waterbending_duet_v7")return cinematicWaterbendingPreset();
     if(name=="legacy_trick")return legacyWaterbendingTrickPreset();
     if (name=="waterbending_trick" || name=="full_choreographed_waterbending_trick") return waterbendingTrickPreset();
