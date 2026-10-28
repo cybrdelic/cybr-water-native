@@ -6,7 +6,7 @@ on:
       - .github/workflows/martial-v11-preview.yml
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   native-choreography-review:
     runs-on: ubuntu-latest
@@ -24,7 +24,7 @@ jobs:
       - name: Native surface and optical review of real state frames
         run: |
           cd choreography-v7
-          python3 render_take.py --take runs/martial-v11-review --scene-assets runs/martial-v11-review/scene --width 480 --height 270 --workers 2 --surface-threads 2 --trace-threads 1 --samples 2 --adaptive-aa 4 --select "$(python3 -c 'print(",".join(str(i) for i in range(0,240,3)))')"
+          python3 render_take.py --take runs/martial-v11-review --scene-assets runs/martial-v11-review/scene --width 480 --height 270 --workers 2 --surface-threads 2 --trace-threads 1 --samples 4 --adaptive-aa 16 --select "$(python3 -c 'print(",".join(str(i) for i in range(0,240,3)))')"
       - name: Build honest 8 fps motion diagnostic and selected contact sheet
         run: |
           python3 - <<'PY'
@@ -37,15 +37,7 @@ jobs:
           if len(frames)!=80:raise RuntimeError(f'Expected 80 distinct actual native frames; got {len(frames)}')
           picks=[24,60,87,111,144,168,198,225]
           labels=['LIFT','WHIP','REDIRECT','SLICE','WAVE','VORTEX','COUNTER','SLAM']
-          board=Image.new('RGB',(960,540),(14,17,19))
-          draw=ImageDraw.Draw(board)
-          for i,(frame,label) in enumerate(zip(picks,labels)):
-            p=src/f'frame_{frame:06d}.png'
-            if not p.exists():raise RuntimeError(f'Missing native review state {frame}')
-            with Image.open(p) as im:
-              im=im.convert('RGB').resize((480,270))
-              board.paste(im,((i%2)*480,(i//2)*135))
-          # Contact sheet is instead eight 240x135 thumbnails in 4x2.
+          # Eight 240x135 thumbnails in a 4x2 contact sheet.
           board=Image.new('RGB',(960,318),(14,17,19));draw=ImageDraw.Draw(board)
           for i,(frame,label) in enumerate(zip(picks,labels)):
             p=src/f'frame_{frame:06d}.png'
@@ -65,6 +57,18 @@ jobs:
             'visual_approval':False,'not_production_resolution':True,
             'source_frame_numbers':list(range(0,240,3))},indent=2))
           PY
+      - name: Publish verified review movie on feature branch
+        run: |
+          set -euo pipefail
+          mkdir -p media/v11
+          cp choreography-v7/runs/martial-v11-review/delivery/V11_8FPS_NATIVE_COARSE_REVIEW.mp4 media/v11/
+          cp choreography-v7/runs/martial-v11-review/delivery/V11_NATIVE_COARSE_CONTACT.jpg media/v11/
+          cp choreography-v7/runs/martial-v11-review/delivery/REVIEW_PROVENANCE.json media/v11/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add media/v11/
+          git commit -m "Publish 10-second V11 native coarse motion review from distinct solver states"
+          git push origin HEAD:"$GITHUB_REF_NAME"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
