@@ -6,6 +6,7 @@
 // Metres, seconds, +y up; the ordinary Config gravity remains (0,-9.81,0).
 #include "fluid.hpp"
 #include "cinematic_choreography.hpp"
+#include "martial_choreography_v11.hpp"
 #include "scene.hpp" // Reuse the frozen fractured-rock primitive, not its scene.
 #include <memory>
 
@@ -696,8 +697,28 @@ inline Preset martialWaterbendingPreset() {
     preset.timingNotes="Scoop 0-1.25; whip 1.25-2.45; redirect 2.45-3.45; slice 3.45-4.45; wave 4.45-5.65; vortex 5.65-7; counter 7-8; slam 8-9; free splash 9-10.";return preset;
 }
 
+// V11 supersedes the V10 experiment without changing its named preset.
+// No pre-seeded airborne crescent: begin with the physical, stationary basin.
+inline Preset martialWaterbendingV11Preset() {
+    Preset preset=waterbendingTrickPreset();
+    auto &scene=preset.scene;
+    scene.name="waterbending_martial_v11";
+    auto controller=std::make_shared<choreography::MartialGuideV11>();
+    controller->prepare(0);
+    scene.prepareForces=[controller](double t){controller->prepare(t);};
+    scene.velocityGuide=[controller](Vec3 p,double t){return controller->sample(p,t);};
+    scene.extraAccelerationBound=82.f;
+    preset.camera={1.80f,1.48f,5.00f};
+    preset.target={0,.86f,-.18f};
+    preset.verticalFov=34.f;
+    preset.forceNotes="V11 body-driven choreography with continuous Hermite hand paths, smoothly blended attacks, bounded MAC velocity feedback, pressure projection and unforced final splash. Flat pool initial state; no guide meshes, injected sources or particle teleportation.";
+    preset.timingNotes="Scoop, dual whip, redirect, thin slices, progressive breaking-wave push, vortex, counterrotation and descending slam overlap smoothly. All external guidance releases by 8.90 s; final 1.10 s is uncontrolled liquid dynamics.";
+    return preset;
+}
+
 inline Preset makePreset(const std::string &name) {
-    if(name=="waterbending_martial" || name=="waterbending_martial_v10")return martialWaterbendingPreset();
+    if(name=="waterbending_martial" || name=="waterbending_martial_v11")return martialWaterbendingV11Preset();
+    if(name=="waterbending_martial_v10")return martialWaterbendingPreset();
     if(name=="waterbending_combat" || name=="waterbending_combat_v8")return combatWaterbendingPreset();
     if(name=="waterbending_duet" || name=="waterbending_duet_v7")return cinematicWaterbendingPreset();
     if(name=="legacy_trick")return legacyWaterbendingTrickPreset();
