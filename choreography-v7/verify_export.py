@@ -73,7 +73,16 @@ def main()->None:
   if record['render']['nonfinite_paths']:raise RuntimeError('Nonfinite native trace')
   hashes.append(rgb);rows.append(record)
  if len(set(hashes))!=240:raise RuntimeError('Repeated source frames')
- movie=delivery/'CYBR_WATERBENDING_DUET_V7_10S.mp4';temp=delivery/'movie.pending.mp4'
+ manifest=json.loads((take/'cache/manifest.json').read_text())
+ scene_name=manifest['scene']
+ names={
+  'waterbending_duet_v7':'CYBR_WATERBENDING_DUET_V7_10S',
+  'waterbending_martial_v11':'CYBR_WATERBENDING_MARTIAL_V11_10S',
+  'waterbending_martial_v10':'CYBR_WATERBENDING_MARTIAL_V10_10S',
+  'waterbending_combat_v8':'CYBR_WATERBENDING_COMBAT_V8_10S'
+ }
+ if scene_name not in names:raise RuntimeError('Unsupported deliverable scene: '+scene_name)
+ movie=delivery/(names[scene_name]+'.mp4');temp=delivery/'movie.pending.mp4'
  call(['ffmpeg','-v','error','-y','-framerate','24','-start_number','0','-i',str(rendered/'frame_%06d.png'),'-frames:v','240','-an','-c:v','libx264','-preset','slow','-crf','17','-pix_fmt','yuv420p','-movflags','+faststart',str(temp)])
  probe=json.loads(call(['ffprobe','-v','error','-select_streams','v:0','-show_streams','-show_frames','-of','json',str(temp)]))
  s=probe['streams'][0];frames=probe['frames']
@@ -89,30 +98,37 @@ def main()->None:
  result={'status':'complete_verified_native_export','video':movie.name,'width':w,'height':h,'duration_s':10,'fps':24,
  'native_rendered_frames':240,'native_simulation_states':len(sim),'unique_native_frames':240,'unique_decoded_frames':240,
  'frame_timestamps_verified':True,'full_movie_decoded':True,'frame_interpolation':False,'image_generation':False,'denoising':False,
- 'solver':'V6 native APIC/MAC; opt-in V7 DuetGuide','dx_m':.03,'marker_spacing_m':.01,
+ 'solver':'V6 native APIC/MAC; '+scene_name,'scene':scene_name,'dx_m':.03,'marker_spacing_m':.01,
  'initial_markers':int(sim[0]['particles']),'final_markers':int(sim[-1]['particles']),
  'initial_volume_m3':float(sim[0]['volume']),'final_volume_m3':float(sim[-1]['volume']),
  'outflow_volume_m3':float(sim[-1]['outflow_volume']),'emitted_volume_m3':float(sim[-1]['emitted_volume']),
  'maximum_volume_ledger_error_m3':max(abs(float(r['volume_ledger_error_m3'])) for r in diagnostics),
  'pressure_relative_residual_max':max(float(r['pressure_relative_residual']) for r in diagnostics),
  'max_surface_volume_relative_error':max(r['surface']['relative_volume_error'] for r in rows),
- 'guidance_fully_off_after_s':8.95,'render':'V6 deterministic Whitted preview; overcast dielectric, oriented foam, adaptive 4-16 samples',
+ 'guidance_fully_off_after_s':(8.90 if scene_name=='waterbending_martial_v11' else 9.0 if scene_name=='waterbending_martial_v10' else 9.05 if scene_name=='waterbending_combat_v8' else 8.95),'render':'V6 deterministic Whitted preview; overcast dielectric, oriented foam, adaptive 4-16 samples',
  'source_code_sha256':source,'native_frame_rgb_sha256':hashes,'decoded_frame_md5':dh,
  'limitations':[f'Native movie resolution is {w}x{h}; no upscaling is applied.','Guide curves are externally forced fantasy control, not unforced natural dynamics.','Uniform 3cm grid and one-way whitewater; no coupled air or microscopic atomization.','Preview approximates indirect illumination; not full converged GI.']}
  result['render_contract_sha256']=contract_sha;result['render_contract']=contract
  result['simulation_audit_sha256']=sha(audit_path);result['simulation_audit_passed']=True
  result['native_state_hashes_verified']=True;result['phase_history_chain_verified']=True
  result['render']='V6 deterministic Whitted preview; frozen camera, sampling, geometry, optics and native binaries'
- result['dx_m']=float(json.loads((take/'cache/manifest.json').read_text())['dx_m'])
- result['marker_spacing_m']=float(json.loads((take/'cache/manifest.json').read_text())['marker_spacing_m'])
+ result['dx_m']=float(manifest['dx_m'])
+ result['marker_spacing_m']=float(manifest['marker_spacing_m'])
+ result['production_grid_target_met']=result['dx_m']<=.030001
+ result['render_quality_class']='native_3cm_review' if result['production_grid_target_met'] else 'coarse_solver_review'
+ if not result['production_grid_target_met']:
+  result['limitations'].append('Coarse review solver grid; thin sheets, whips and spray cannot be judged as production-resolution physics.')
  temp.replace(movie);result['sha256']=sha(movie)
  verification_tmp=delivery/'VERIFICATION.json.tmp';verification_tmp.write_text(json.dumps(result,indent=2)+'\n');verification_tmp.replace(delivery/'VERIFICATION.json')
- picks=[36,72,108,126,150,180,204,234];labels=['DRAW / LIFT','FIGURE EIGHT','COIL','STAGGERED SWEEPS','ORBITAL CATCH','RING HOLD','TILTED RETURN','FREE SPLASH']
+ picks=[36,72,108,126,150,180,204,234]
+ labels=(['DRAW / LIFT','FIGURE EIGHT','COIL','STAGGERED SWEEPS','ORBITAL CATCH','RING HOLD','TILTED RETURN','FREE SPLASH']
+         if scene_name=='waterbending_duet_v7' else
+         ['SCOOP','WHIPS','REDIRECT','SLICES','WAVE','VORTEX','SLAM','FREE SPLASH'])
  tw=384;th=round(h*tw/w);board=Image.new('RGB',(4*tw,2*(th+28)),(13,20,25));d=ImageDraw.Draw(board)
  for k,(i,label) in enumerate(zip(picks,labels)):
   x=(k%4)*tw;y=(k//4)*(th+28)
   with Image.open(rendered/f'frame_{i:06d}.png') as im:board.paste(im.resize((tw,th),Image.Resampling.LANCZOS),(x,y))
   d.text((x+10,y+th+7),f'{i/24:.2f}s  {label}',fill=(230,236,240))
- board.save(delivery/'CYBR_WATERBENDING_DUET_SEQUENCE.jpg',quality=92)
+ board.save(delivery/(names[scene_name]+'_SEQUENCE.jpg'),quality=92)
  print(json.dumps({k:v for k,v in result.items() if k not in ('source_code_sha256','native_frame_rgb_sha256','decoded_frame_md5')},indent=2))
 if __name__=='__main__':main()
