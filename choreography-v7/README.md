@@ -1,5 +1,61 @@
 # Native waterbending duet / choreography V7
 
+## V11 martial choreography (new; opt-in)
+
+The newest controller is `waterbending_martial_v11` (alias `waterbending_martial`).
+**The older V10, V8 combat, V7 duet and accepted native V6 are still selectable.**
+
+This revision targets defects observed in the controller source, not an already
+approved V11 beauty render:
+
+- **No hand-trajectory snaps:** nonuniform cubic-Hermite hand tracks with shared
+  knot tangents replace disjoint per-beat hand-position formulas. Continuous
+  position and velocity are tested at all interior knots.
+- **No abrupt force-regime cuts:** eight overlapping C2 quintic attack envelopes
+  blend scoop, whip, redirect, slice, wave, vortex, counterrotation and slam.
+  Force magnitude is weighted and normalized before the MAC pressure projection.
+- **Actual whip transport:** two independently moving curved velocity-guide tubes
+  with tapering tip influence and tangential transport; guide curves are never
+  rendered meshes and primary liquid cannot be teleported.
+- **Traveling wave, controlled spiral and thin slice:** motion-dependent fields
+  act upon the shared pressure-projected fluid. These are force *requests*,
+  not guarantees that the liquid reaches a prescribed shape.
+- **No pre-suspended water:** V11 starts with the quiescent basin from the V6
+  preset, whereas the experimental V10 scene intentionally pre-seeds an
+  airborne crescent. Neither V11 nor V10 uses an ongoing liquid inlet.
+- **Real release:** feedback and gravity support fade to zero by 8.90 s.
+  The last 1.10 seconds are governed by the native fluid solver.
+
+Regressions in `engine/tests/martial_v11_checks.cpp` check knot continuity,
+force bounds, transient smoothness, exact release, initial-state absence of
+pre-suspended material, absence of synthetic inlets, open lateral boundaries,
+and preservation of the earlier named presets. Numerical unit-test success is
+**not** evidence of full visual acceptance.
+
+Run the **native 3 cm take** (960 x 540, 24 fps, 10 seconds; very expensive):
+
+```sh
+cd choreography-v7
+python3 -m pip install -r requirements-render.txt
+python3 reproduce.py --scene waterbending_martial_v11 --out runs/martial-v11 --dx .03 --width 960 --height 540
+```
+
+For a **coarse choreography diagnostic only** (not a beauty render), use
+`--dx .12 --out runs/martial-v11-coarse` in a new output directory.
+The exporter now records the actual fluid grid and scene identity rather than
+mislabeling coarse reviews as V7 duet / production water. Do not resume or
+replay a state cache under a different scene or grid spacing.
+
+**Unresolved production issues:** no 3 cm V11 film take has been visually
+approved; a 3 cm pressure grid cannot directly resolve centimeter-thin
+sheets or realistic microscopic atomization; body/hand-driven fantasy forces
+are not measured real-world biomechanics; air entrainment remains one-way;
+caustic transport and true multiple-scattering water optics are approximations.
+A stronger native render and comparative image review are still required before
+calling the result photorealistic.
+
+---
+
 An opt-in choreography upgrade on the accepted V6 solver, mesher and dielectric renderer. The original V6 `waterbending_trick` remains selectable. The new scene is `waterbending_duet`.
 
 ## Performance
