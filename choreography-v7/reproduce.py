@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproduce the V7 native duet from source. No network, images or pretrained models."""
+"""Reproduce the native V7 duet or the opt-in V11 martial take from real solver states."""
 from __future__ import annotations
 import argparse, csv, hashlib, json, math, os, shutil, struct, subprocess, sys, time
 from pathlib import Path
@@ -161,6 +161,8 @@ def run_simulation(command:list[str],log:Path,cache:Path)->None:
 def main()->None:
  ap=argparse.ArgumentParser(description=__doc__)
  ap.add_argument('--out',type=Path,default=ROOT/'runs/duet');ap.add_argument('--tests-only',action='store_true')
+ ap.add_argument('--scene',choices=['waterbending_duet','waterbending_martial','waterbending_martial_v11','waterbending_martial_v10','waterbending_combat'],default='waterbending_duet')
+ ap.add_argument('--dx',type=float,default=.03,help='Pressure-grid cell size in metres. .03 is production target; .12 is a coarse choreography review.')
  continuation=ap.add_mutually_exclusive_group()
  continuation.add_argument('--skip-simulation',action='store_true');continuation.add_argument('--resume',action='store_true')
  ap.add_argument('--simulation-only',action='store_true');ap.add_argument('--width',type=int,default=960);ap.add_argument('--height',type=int,default=540)
@@ -168,6 +170,13 @@ def main()->None:
  a=ap.parse_args();out=a.out.resolve();out.mkdir(parents=True,exist_ok=True);logs=out/'logs';logs.mkdir(exist_ok=True)
  if not 1<=a.threads<=32 or not 1<=a.workers<=16:ap.error('Thread/worker count out of range')
  if a.width<32 or a.height<32 or a.width%2 or a.height%2:ap.error('Even image dimensions >=32 required')
+ if not .018<=a.dx<=.12:ap.error('Grid dx must be between .018 and .12 metres')
+ if (a.resume or a.skip_simulation):
+  prior=out/'simulation_command.json'
+  if not prior.exists():raise RuntimeError('Existing simulation command required for skip/resume')
+  existing=json.loads(prior.read_text())
+  if option(existing,'--scene')!=a.scene or abs(float(option(existing,'--dx'))-a.dx)>1e-7:
+   raise RuntimeError('Cannot mix scene identity or grid size in recovered/cached fluid states')
  engine=ROOT/'engine'
  if not (engine/'src/fluid.hpp').exists():raise RuntimeError('Run python3 scripts/materialize_native.py from repository root first')
  if a.resume:
@@ -178,8 +187,8 @@ def main()->None:
  if a.tests_only:return
  b=engine/'build';assets=out/'scene';assets.mkdir(exist_ok=True)
  if not (assets/'solids.mesh').exists() or not (assets/'solid.sdf').exists():
-  run([str(b/'gallery_export'),'--scene','waterbending_duet','--out',str(assets/'solids.mesh'),'--quality','1','--sdf-out',str(assets/'solid.sdf'),'--sdf-dx','.025','--sdf-lower','-5,-.12,-5','--sdf-upper','5,3,8'],logs/'scene_export.log')
- cmd=[str(b/'gallery_sim'),'--scene','waterbending_duet','--dx','.03','--duration','10','--fps','24','--threads',str(a.threads),'--out',str(out/'cache'),'--apic','--particles-per-axis','3','--reseed-interval','0','--whitewater-rate','24000','--max-whitewater','180000','--surface-tension','.072','--auto-domain','--domain-padding','.48','--domain-lower','-1.98,-.12,-1.50','--domain-upper','1.98,2.82,1.50']
+  run([str(b/'gallery_export'),'--scene',a.scene,'--out',str(assets/'solids.mesh'),'--quality','1','--sdf-out',str(assets/'solid.sdf'),'--sdf-dx','.025','--sdf-lower','-5,-.12,-5','--sdf-upper','5,3,8'],logs/'scene_export.log')
+ cmd=[str(b/'gallery_sim'),'--scene',a.scene,'--dx',format(a.dx,'.8g'),'--duration','10','--fps','24','--threads',str(a.threads),'--out',str(out/'cache'),'--apic','--particles-per-axis','3','--reseed-interval','0','--whitewater-rate','24000','--max-whitewater','180000','--surface-tension','.072','--auto-domain','--domain-padding','.48','--domain-lower','-1.98,-.12,-1.50','--domain-upper','1.98,2.82,1.50']
  if a.resume:
   original=json.loads((out/'simulation_command.json').read_text())
   original[0]=str(b/'gallery_sim')
@@ -196,5 +205,5 @@ def main()->None:
  if a.simulation_only:return
  run([sys.executable,str(ROOT/'render_take.py'),'--take',str(out),'--scene-assets',str(assets),'--width',str(a.width),'--height',str(a.height),'--workers',str(a.workers)],logs/'native_render.log')
  run([sys.executable,str(ROOT/'verify_export.py'),'--take',str(out)],logs/'export_verification.log')
- print(out/'delivery/CYBR_WATERBENDING_DUET_V7_10S.mp4')
+ print(json.loads((out/'delivery/VERIFICATION.json').read_text())['video'])
 if __name__=='__main__':main()
