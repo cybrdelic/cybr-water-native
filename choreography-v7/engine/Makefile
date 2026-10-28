@@ -10,7 +10,7 @@ build:
 build/water_sim: src/simulate.cpp src/fluid.hpp src/scene.hpp | build
 	$(CXX) $(CXXFLAGS) src/simulate.cpp -o $@
 
-build/gallery_sim: src/gallery_simulate.cpp src/fluid.hpp src/scene.hpp src/gallery_scenes.hpp src/cinematic_choreography.hpp | build
+build/gallery_sim: src/gallery_simulate.cpp src/fluid.hpp src/scene.hpp src/gallery_scenes.hpp src/cinematic_choreography.hpp src/martial_choreography_v11.hpp | build
 	$(CXX) $(CXXFLAGS) src/gallery_simulate.cpp -o $@
 
 build/surface: src/surface.cpp | build
@@ -89,9 +89,10 @@ build/mesh_cache_codec: ../mesh_cache_codec.cpp | build
 build/choreography_checks: tests/choreography_checks.cpp src/cinematic_choreography.hpp src/gallery_scenes.hpp src/fluid.hpp | build
 	$(CXX) $(CXXFLAGS) $< -o $@
 .PHONY: choreography-checks
-choreography-checks: build/choreography_checks build/duet_query_checks
+choreography-checks: build/choreography_checks build/duet_query_checks build/martial_v11_checks
 	build/choreography_checks
 	build/duet_query_checks
+	build/martial_v11_checks
 
 # Exact-query equivalence is an additional release gate, not a looser tolerance.
 build/duet_query_checks: tests/duet_query_checks.cpp src/cinematic_choreography.hpp src/fluid.hpp | build
@@ -103,3 +104,8 @@ build/combat_choreography_checks: tests/combat_choreography_checks.cpp src/galle
 .PHONY: combat-checks
 combat-checks: build/combat_choreography_checks
 	build/combat_choreography_checks
+
+# V11 transition, boundary and force-release contract regression.
+build/martial_v11_checks: tests/martial_v11_checks.cpp src/gallery_scenes.hpp src/martial_choreography_v11.hpp src/fluid.hpp | build
+	$(CXX) $(CXXFLAGS) $< -o $@
+
