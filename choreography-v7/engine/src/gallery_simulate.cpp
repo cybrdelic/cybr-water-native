@@ -119,11 +119,32 @@ int main(int argc,char **argv){
         auto save=[&](int frame){
             double e05=0,e08=0,e11=0,gv=0,dist=0;float ymax=-1e9;
             gallery::RetainedTrickGuide control;control.prepare(solver.time);
-            choreography::DuetGuide duet;bool isDuet=(sceneName=="waterbending_duet"||sceneName=="waterbending_duet_v7");if(isDuet)duet.prepare(solver.time);
+            choreography::DuetGuide duet;
+            bool isDuet=(sceneName=="waterbending_duet"||sceneName=="waterbending_duet_v7");
+            bool isV11=(sceneName=="waterbending_martial"||sceneName=="waterbending_martial_v11");
+            bool isV10=(sceneName=="waterbending_martial_v10");
+            if(isDuet)duet.prepare(solver.time);
+            // Martial guides are fields, not closed loops. For these two
+            // scenes the distance diagnostic means nearest virtual hand,
+            // not an unrelated retained-trick curve.
+            Vec3 leftHand{},rightHand{};
+            if(isV11){
+                leftHand=choreography::MartialGuideV11::hand(0,float(solver.time)).p;
+                rightHand=choreography::MartialGuideV11::hand(1,float(solver.time)).p;
+            }else if(isV10){
+                leftHand=choreography::MartialGuide::hand(0,float(solver.time)).p;
+                rightHand=choreography::MartialGuide::hand(1,float(solver.time)).p;
+            }
             for(const auto &p:solver.particles){
                 if(p.p.y>.5f)e05+=p.volume;if(p.p.y>.8f)e08+=p.volume;if(p.p.y>1.1f)e11+=p.volume;
                 ymax=std::max(ymax,p.p.y);
-                if(p.p.y>.45f){float d=std::sqrt(isDuet?std::min(duet.nearest(p.p,0).d2,duet.nearest(p.p,1).d2):control.closest(p.p).d2);dist+=d*p.volume;gv+=p.volume;}
+                if(p.p.y>.45f){
+                    float d=0;
+                    if(isV11||isV10)d=std::min(length(p.p-leftHand),length(p.p-rightHand));
+                    else if(isDuet)d=std::sqrt(std::min(duet.nearest(p.p,0).d2,duet.nearest(p.p,1).d2));
+                    else d=std::sqrt(control.closest(p.p).d2);
+                    dist+=d*p.volume;gv+=p.volume;
+                }
             }
             float clearance=1e9f;uint64_t near1=0,near2=0;double potential=0;
             for(const auto &p:solver.particles){
