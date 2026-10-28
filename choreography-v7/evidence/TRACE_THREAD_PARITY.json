@@ -1,0 +1,43 @@
+{
+  "format": "CYBR native tracer thread parity 1",
+  "observed_utc": "2026-10-23T04:16:31.937178+00:00",
+  "frame": 42,
+  "simulation_time_s": 1.75,
+  "resolution": [
+    960,
+    540
+  ],
+  "samples_per_pixel": 4,
+  "adaptive_aa_max": 16,
+  "max_path_depth": 20,
+  "native_binary_sha256": "be6c8b4547a7378742f96bf8a13582fa32294ac07e855581146c6ffe1f00ebbf",
+  "native_trace_source_sha256": "ad4f22f5f5cf8041891c64b8702b30439bc54b4f825dfb68140fd7786b659810",
+  "render_contract_sha256": "0bd6657aa8950db6c6e9c6b3280a176f0a362036c2a49f94093960db19c4187f",
+  "input_mesh_sha256": "a8a7d1040b164e6187907bb823bc860ebc339222dc8e56a4a376b51bd409d489",
+  "input_spheres_sha256": "87331dd488feef7c224ef30c3305665e61ef11e4d9501deb3844edcf017d4451",
+  "rgb_sha256_threads1": "c98c35c0f205b6946f2c41bcb160cf960c03b60dfcdd61dc8534014e03bae496",
+  "rgb_sha256_threads2": "c98c35c0f205b6946f2c41bcb160cf960c03b60dfcdd61dc8534014e03bae496",
+  "all_recorded_render_fields_match_except": [
+    "threads",
+    "inputs",
+    "build_seconds",
+    "render_seconds"
+  ],
+  "differing_transport_statistics": {},
+  "camera_paths": 2774592,
+  "segments": 14950003,
+  "nonfinite_paths": 0,
+  "threads1": {
+    "build_seconds": 4.281171395,
+    "render_seconds": 118.7822829
+  },
+  "threads2": {
+    "build_seconds": 29.79493942,
+    "render_seconds": 46.6265316,
+    "process_wall_seconds": 76.59198645700235,
+    "process_cpu_seconds": 62.820256,
+    "peak_rss_kib": 212016
+  },
+  "scope": "Same native binary, immutable mesh and sphere inputs, warm diffuse/background caches, and visual settings. The decoded RGB bytes and all recorded transport statistics match. Each pixel owns its sample accumulation; cross-thread statistics are integer counters. Photon mapping is disabled for this take.",
+  "timing_caveat": "Concurrent workloads varied during this single observed comparison; these timings do not establish a universal speedup."
+}

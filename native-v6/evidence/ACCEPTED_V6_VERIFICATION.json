@@ -1,0 +1,668 @@
+{
+  "status": "complete_verified_native_export",
+  "video": "CYBR_WATERBENDING_V6_COMPLETE_10S.mp4",
+  "sha256": "6eeb314a0f353ae5c9d2bfb9bc7cddbe9d3aed10180453ecdb3c4489ddf356f9",
+  "bytes": 4505894,
+  "width": 960,
+  "height": 540,
+  "fps": 24,
+  "duration_s": 10,
+  "native_rendered_frames": 240,
+  "unique_native_rgb_frames": 240,
+  "unique_decoded_frames": 240,
+  "full_movie_decoded": true,
+  "timestamp_max_error_s": 3.333333342681044e-07,
+  "image_generation": false,
+  "frame_interpolation": false,
+  "frame_duplication": false,
+  "post_denoising": false,
+  "temporal_denoising": false,
+  "scope": "Completion of the V6 native waterbending render and continuation fixes; not an all-seventeen-scene or new multiphase-physics release.",
+  "simulation": {
+    "passed": true,
+    "simulation_states": 241,
+    "unique_primary_position_velocity_states": 241,
+    "times_match_24_Hz": true,
+    "finite_primary_and_secondary_values": true,
+    "primary_count": 439809,
+    "unique_ids": true,
+    "primary_ids_identical_across_all_states": true,
+    "initial_volume_m3": 0.43980899889,
+    "final_volume_m3": 0.43980899889,
+    "maximum_volume_change_m3": 0.0,
+    "added_water_m3": 0.0,
+    "outflow_water_m3": 0.0,
+    "minimum_lateral_boundary_clearance_m": 0.47287273407,
+    "markers_within_two_cells_of_lateral_boundary": 0,
+    "domain_growth_events": 16,
+    "final_domain": {
+      "time": 9.88257575757,
+      "cells": 8338944,
+      "affine_state_preserved": true,
+      "lower": [
+        -4.01999998093,
+        -0.119999997318,
+        -4.97999954224
+      ],
+      "upper": [
+        3.2999997139,
+        2.75999999046,
+        5.69999980927
+      ]
+    },
+    "primary_global_bounds_m": [
+      [
+        -3.200780153274536,
+        0.02440732717514038,
+        -4.121481418609619
+      ],
+      [
+        2.3363378047943115,
+        1.8872199058532715,
+        5.209638595581055
+      ]
+    ],
+    "primary_solid_field_coverage": true,
+    "peak_secondary_count": 20008,
+    "secondary_radius_range_m": [
+      0.00016779704310465604,
+      0.0024999999441206455
+    ],
+    "pressure_relative_residual_max": 2.12668844117e-05,
+    "divergence_after_l2_max_s_inv": 0.00011323619677,
+    "volume_ledger_abs_max_m3": 0.0,
+    "ring_volume_above_08m_at_75s_m3": 0.262498999337,
+    "final_volume_above_08m_m3": 0.0,
+    "representative_states": [
+      {
+        "frame": 0,
+        "time_s": 0.0,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -0.9255964159965515,
+            0.02440732717514038,
+            -0.7055808901786804
+          ],
+          [
+            0.9255855083465576,
+            0.2849999666213989,
+            0.7055616974830627
+          ]
+        ],
+        "max_speed_m_s": 0.0,
+        "whitewater_count": 0,
+        "whitewater_types": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frame": 24,
+        "time_s": 1.0,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -0.9807866811752319,
+            0.024407440796494484,
+            -0.7414177656173706
+          ],
+          [
+            0.9339049458503723,
+            1.084747314453125,
+            0.7831608653068542
+          ]
+        ],
+        "max_speed_m_s": 2.170546531677246,
+        "whitewater_count": 1056,
+        "whitewater_types": [
+          149,
+          820,
+          87
+        ]
+      },
+      {
+        "frame": 72,
+        "time_s": 3.0,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -1.0401380062103271,
+            0.028120053932070732,
+            -0.7479035258293152
+          ],
+          [
+            1.0110563039779663,
+            1.771532654762268,
+            0.7756533622741699
+          ]
+        ],
+        "max_speed_m_s": 1.6220993995666504,
+        "whitewater_count": 1476,
+        "whitewater_types": [
+          192,
+          1197,
+          87
+        ]
+      },
+      {
+        "frame": 120,
+        "time_s": 5.0,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -0.8311389684677124,
+            0.030152594670653343,
+            -0.7431467175483704
+          ],
+          [
+            0.9747952818870544,
+            1.6403592824935913,
+            0.7581970691680908
+          ]
+        ],
+        "max_speed_m_s": 2.4670300483703613,
+        "whitewater_count": 1190,
+        "whitewater_types": [
+          120,
+          1054,
+          16
+        ]
+      },
+      {
+        "frame": 168,
+        "time_s": 7.0,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -0.8650171160697937,
+            0.03004460409283638,
+            -0.7417475581169128
+          ],
+          [
+            0.8904343247413635,
+            1.8810523748397827,
+            0.7448514103889465
+          ]
+        ],
+        "max_speed_m_s": 1.8151823282241821,
+        "whitewater_count": 2048,
+        "whitewater_types": [
+          71,
+          1617,
+          360
+        ]
+      },
+      {
+        "frame": 180,
+        "time_s": 7.5,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -0.884184718132019,
+            0.03004155121743679,
+            -0.7411914467811584
+          ],
+          [
+            0.9015519618988037,
+            1.8590145111083984,
+            0.7436466217041016
+          ]
+        ],
+        "max_speed_m_s": 0.8647204041481018,
+        "whitewater_count": 1768,
+        "whitewater_types": [
+          62,
+          1470,
+          236
+        ]
+      },
+      {
+        "frame": 204,
+        "time_s": 8.5,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -0.9083452224731445,
+            0.030045296996831894,
+            -0.7403892278671265
+          ],
+          [
+            0.9102931618690491,
+            1.585652470588684,
+            0.7293093800544739
+          ]
+        ],
+        "max_speed_m_s": 3.5879831314086914,
+        "whitewater_count": 1236,
+        "whitewater_types": [
+          141,
+          921,
+          174
+        ]
+      },
+      {
+        "frame": 210,
+        "time_s": 8.75,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -1.5326482057571411,
+            0.030097585171461105,
+            -1.0020020008087158
+          ],
+          [
+            1.2149031162261963,
+            0.8448695540428162,
+            0.9526746869087219
+          ]
+        ],
+        "max_speed_m_s": 5.577657699584961,
+        "whitewater_count": 2469,
+        "whitewater_types": [
+          250,
+          1739,
+          480
+        ]
+      },
+      {
+        "frame": 216,
+        "time_s": 9.0,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -2.308163642883301,
+            0.03006221167743206,
+            -1.5913267135620117
+          ],
+          [
+            1.4978922605514526,
+            1.0616545677185059,
+            1.7499592304229736
+          ]
+        ],
+        "max_speed_m_s": 6.789733409881592,
+        "whitewater_count": 5161,
+        "whitewater_types": [
+          242,
+          4103,
+          816
+        ]
+      },
+      {
+        "frame": 222,
+        "time_s": 9.25,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -3.086639404296875,
+            0.03007187880575657,
+            -2.170593500137329
+          ],
+          [
+            1.8302809000015259,
+            1.5418169498443604,
+            2.7237133979797363
+          ]
+        ],
+        "max_speed_m_s": 5.749756336212158,
+        "whitewater_count": 8278,
+        "whitewater_types": [
+          852,
+          6109,
+          1317
+        ]
+      },
+      {
+        "frame": 228,
+        "time_s": 9.5,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -3.2002954483032227,
+            0.030043987557291985,
+            -2.700406312942505
+          ],
+          [
+            1.839887022972107,
+            1.4148199558258057,
+            4.105923652648926
+          ]
+        ],
+        "max_speed_m_s": 7.092189311981201,
+        "whitewater_count": 11449,
+        "whitewater_types": [
+          2200,
+          7497,
+          1752
+        ]
+      },
+      {
+        "frame": 234,
+        "time_s": 9.75,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -3.200551748275757,
+            0.03003217838704586,
+            -3.7852370738983154
+          ],
+          [
+            1.8457638025283813,
+            0.7102543711662292,
+            4.954923629760742
+          ]
+        ],
+        "max_speed_m_s": 5.900991916656494,
+        "whitewater_count": 16276,
+        "whitewater_types": [
+          4245,
+          9802,
+          2229
+        ]
+      },
+      {
+        "frame": 239,
+        "time_s": 9.958333015441895,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -3.2007439136505127,
+            0.030041713267564774,
+            -4.1203460693359375
+          ],
+          [
+            2.2438228130340576,
+            0.7313830852508545,
+            5.118515968322754
+          ]
+        ],
+        "max_speed_m_s": 6.039951324462891,
+        "whitewater_count": 19367,
+        "whitewater_types": [
+          5456,
+          12190,
+          1721
+        ]
+      },
+      {
+        "frame": 240,
+        "time_s": 10.0,
+        "primary_count": 439809,
+        "volume_m3": 0.439808998889589,
+        "bounds_m": [
+          [
+            -3.200780153274536,
+            0.030044687911868095,
+            -4.121481418609619
+          ],
+          [
+            2.3363378047943115,
+            0.6804942488670349,
+            5.209638595581055
+          ]
+        ],
+        "max_speed_m_s": 5.432109355926514,
+        "whitewater_count": 20008,
+        "whitewater_types": [
+          5671,
+          12667,
+          1670
+        ]
+      }
+    ]
+  },
+  "source_frames_matching_V5_byte_for_byte": 240,
+  "source_comparison_total": 240,
+  "source_code_sha256": {
+    "trace.cpp": "ad4f22f5f5cf8041891c64b8702b30439bc54b4f825dfb68140fd7786b659810",
+    "surface.cpp": "2440837241a3318df7c787b476b75be5ec223a6681e9210ade21e052e0bce1be",
+    "fluid.hpp": "148e10ae69e90e0b1db2a8eec411e2c2cfc50ea50635751143bcff039968f0b8",
+    "gallery_scenes.hpp": "3b7279d4ed9a378db25bd01f84c0bcd7c8b8c1ce1a6dfa4c21d657f77f889d4c"
+  },
+  "regression_test_groups": [
+    {
+      "passed": true,
+      "same_side_coverage": 0.00195121893194,
+      "opposite_side_coverage": 0,
+      "negative_control_leak": 0.0018553402042,
+      "projected_area_relative_error": 0.0113332448982,
+      "world_lattice_opacity_error": 0
+    },
+    {
+      "passed": true,
+      "growth_next_step_max_error": 0,
+      "checkpoint_next_step_max_error": 0,
+      "primary_markers": 4386
+    },
+    {
+      "passed": true,
+      "normal_configurations": 80096,
+      "min_reflection_geometric_cosine": 5.45382499695e-06,
+      "min_transmission_geometric_cosine": 0.0695569589734,
+      "max_furnace_error": 3.0971480669e-07,
+      "adaptive_sample_locations_unique": true,
+      "foam_projected_area_relative_error": 0.0113332448982,
+      "foam_bound_change_max_opacity_error": 7.21774995327e-09
+    },
+    {
+      "passed": true,
+      "triangles": 576,
+      "opposite_sheet_separation_m": 0.002,
+      "max_vertex_displacement_m": 0,
+      "min_original_normal_dot": 0.981558,
+      "positions_bit_identical": true
+    },
+    {
+      "passed": true,
+      "pairs": 1344000,
+      "input_angle_step_degrees": 0.01,
+      "max_corrected_normal_step_norm": 0.000340214,
+      "worst_view_deg": 40,
+      "worst_normal_tilt_deg": 79.96,
+      "worst_azimuth_deg": 30
+    },
+    {
+      "passed": true,
+      "quadratic_weight_error": 1.05973953168e-07,
+      "quadratic_first_moment_error_m": 8.17221401661e-09,
+      "quadratic_second_moment_error_m2": 4.76514064318e-10,
+      "pressure_symmetry_relative_error": 6.94130356802e-07,
+      "pressure_quadratic_energy": 619.960061929,
+      "projection_divergence_ratio": 5.05801985957e-06,
+      "merge_volume_error_m3": 2.03726813197e-08,
+      "merge_momentum_error_m4_s_inv": 1.66454213968e-07,
+      "split_volume_error_m3": 2.03726813197e-08,
+      "restart_max_state_error": 0,
+      "incompatible_checkpoint_rejected": true,
+      "apic_affine_velocity_error_m_s": 4.17232513428e-07,
+      "inlet_divergence_l2_s_inv": 3.46957832896e-06,
+      "continuous_solid_clearance_m": 0.00200012326241,
+      "masked_inlet_flux_m3_s": 0.288000020027,
+      "masked_inlet_attempts": 3021,
+      "masked_inlet_rejected_attempts": 1517,
+      "masked_inlet_volume_error_m3": 6.99999461039e-05,
+      "masked_inlet_marker_volume_m3": 0.000125000005588,
+      "masked_inlet_emits_every_interval": true,
+      "masked_inlet_restart_position_error_m": 0,
+      "apic_boundary_value_error_m_s": 1.12022270571e-07,
+      "apic_boundary_gradient_error_s_inv": 4.17232513428e-07,
+      "apic_constant_boundary_gradient_error_s_inv": 3.26899835326e-12,
+      "apic_split_affine_error_m_s": 3.31634524287e-08,
+      "apic_split_momentum_error_m4_s_inv": 2.93303228927e-11,
+      "closed_domain_normal_flux_m_s": 0,
+      "closed_domain_tangential_velocity_preserved": true,
+      "closed_domain_fingerprint_distinct": true
+    },
+    {
+      "passed": true,
+      "normal_water_fresnel": 0.02037318423,
+      "white_sphere_mean": 1,
+      "deterministic_white_furnace": 0.9999998212,
+      "deterministic_beer_sphere": 0.4555640221,
+      "index_matched_grazing_reflection": 0,
+      "diffuse_sh_white_sphere": 1.000072837,
+      "beer_sphere_mean": 0.455922346,
+      "beer_sphere_analytic": 0.4555640221,
+      "nested_air_water": true,
+      "motion_triangle": true,
+      "tiny_closed_tetrahedron": true,
+      "adaptive_origin_sides": true,
+      "near_origin_plane_pair": true,
+      "max_tested_bsdf_energy": 0.4780359888
+    },
+    {
+      "passed": true,
+      "capillary_pressure_Pa": 0.598348680791,
+      "analytic_pressure_Pa": 0.575999975204,
+      "relative_pressure_error": 0.0387998377585,
+      "static_sphere_peak_velocity_m_s": 3.8500552364e-06,
+      "capillary_divergence_L2_s_inv": 6.90782360313e-06,
+      "domain_growth_preserves_particle_and_affine_bytes": true,
+      "domain_growth_pressure_max_error": 0
+    },
+    {
+      "passed": true,
+      "hysteresis_enter_spacing": 3.2,
+      "hysteresis_exit_spacing": 2.2,
+      "sparse_ligament_preserved": true,
+      "same_state_restart_idempotent": true,
+      "old_count_cutoff_negative_control": true,
+      "isolated_volume_preserved": true
+    },
+    {
+      "passed": true,
+      "closed_guide_error_m": 1.93141e-07,
+      "target_speed_max_m_s": 2.14271,
+      "feedforward_accel_max_m_s2": 19.7409,
+      "transition_velocity_jump_m_s": 0.000629563,
+      "feedback_equilibrium_error_m_s": 5.96046e-07,
+      "inlet_count": 0,
+      "guidance_off_after_s": 8.55,
+      "legacy_preserved": true
+    },
+    {
+      "passed": true,
+      "lateral_faces_open": true,
+      "open_marker_not_clamped": true,
+      "open_outflow_recognized": true,
+      "old_wall_negative_control": true,
+      "inlet_count": 0,
+      "max_post_release_guidance": 0
+    },
+    {
+      "passed": true,
+      "scope": "Short coarse numerical smoke tests, not visual qualification",
+      "scenes": [
+        {
+          "name": "beach",
+          "dx_m": 0.0900000035763,
+          "time_s": 0.12,
+          "particles": 14296,
+          "volume_ledger_error_m3": 0,
+          "pressure_relative_residual": 1.86664221787e-05,
+          "finite": true
+        },
+        {
+          "name": "waterbending",
+          "dx_m": 0.0900000035763,
+          "time_s": 0.12,
+          "particles": 3116,
+          "volume_ledger_error_m3": 0,
+          "pressure_relative_residual": 1.73335854581e-05,
+          "finite": true
+        },
+        {
+          "name": "drop",
+          "dx_m": 0.00450000027195,
+          "time_s": 0.12,
+          "particles": 19226,
+          "volume_ledger_error_m3": 0,
+          "pressure_relative_residual": 9.310388969e-06,
+          "finite": true
+        },
+        {
+          "name": "whirlpool",
+          "dx_m": 0.0495000034571,
+          "time_s": 0.12,
+          "particles": 4752,
+          "volume_ledger_error_m3": 0,
+          "pressure_relative_residual": 7.77570389607e-06,
+          "finite": true
+        },
+        {
+          "name": "rockimpact",
+          "dx_m": 0.0900000035763,
+          "time_s": 0.12,
+          "particles": 7902,
+          "volume_ledger_error_m3": 0,
+          "pressure_relative_residual": 8.29141770576e-06,
+          "finite": true
+        },
+        {
+          "name": "jets",
+          "dx_m": 0.0900000035763,
+          "time_s": 0.12,
+          "particles": 3625,
+          "volume_ledger_error_m3": 0,
+          "pressure_relative_residual": 4.98698007324e-06,
+          "finite": true
+        },
+        {
+          "name": "cascade",
+          "dx_m": 0.0900000035763,
+          "time_s": 0.12,
+          "particles": 2058,
+          "volume_ledger_error_m3": 0,
+          "pressure_relative_residual": 5.02488257582e-06,
+          "finite": true
+        },
+        {
+          "name": "waterbending_trick",
+          "dx_m": 0.0900000035763,
+          "time_s": 0.12,
+          "particles": 4884,
+          "volume_ledger_error_m3": 0,
+          "pressure_relative_residual": 1.91627817305e-05,
+          "finite": true
+        }
+      ]
+    }
+  ],
+  "surface_max_relative_volume_error": 0.0019305063327911898,
+  "nonfinite_paths": 0,
+  "medium_underflows": 0,
+  "unclosed_medium_escapes": 23164,
+  "renderer": {
+    "method": "Deterministic native dielectric reflection/refraction preview",
+    "camera_samples": "4 base, adaptively refined to 16",
+    "coherent_normals": true,
+    "surface_oriented_foam": true,
+    "diffuse_hemisphere_samples": 24,
+    "max_bounces": 20,
+    "branch_weight_cutoff": 0.001,
+    "ior": 1.333
+  },
+  "remaining_limitations": [
+    "Uniform 3 cm pressure grid, not adaptive refinement",
+    "One-way secondary whitewater, not coupled air pressure",
+    "Microscopic atomization unresolved",
+    "Six-lobe foam orientation filtering is a visual approximation, not gas dynamics",
+    "Deterministic finite-depth preview is not converged full global illumination",
+    "Some fine geometry roughness and thick guided structures remain"
+  ]
+}

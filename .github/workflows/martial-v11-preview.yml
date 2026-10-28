@@ -1,0 +1,81 @@
+name: V11 native waterbending visual smoke test
+on:
+  push:
+    branches: [feature/v6-native-duet-choreography]
+    paths:
+      - .github/workflows/martial-v11-preview.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  native-choreography-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install renderer dependencies
+        run: |
+          python3 -m pip install -r choreography-v7/requirements-render.txt
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: Simulate complete 10-second V11 performance from actual liquid
+        run: |
+          cd choreography-v7
+          python3 reproduce.py --scene waterbending_martial_v11 --out runs/martial-v11-review --dx .12 --threads 2 --simulation-only
+      - name: Native surface and optical review of real state frames
+        run: |
+          cd choreography-v7
+          python3 render_take.py --take runs/martial-v11-review --scene-assets runs/martial-v11-review/scene --width 480 --height 270 --workers 2 --surface-threads 2 --trace-threads 1 --samples 4 --adaptive-aa 16 --select "$(python3 -c 'print(",".join(str(i) for i in range(0,240,3)))')"
+      - name: Build honest 8 fps motion diagnostic and selected contact sheet
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw
+          import subprocess, json, hashlib
+          root=Path('choreography-v7/runs/martial-v11-review')
+          src=root/'selected'; out=root/'delivery';out.mkdir(exist_ok=True)
+          frames=list(sorted(src.glob('frame_*.png')))
+          if len(frames)!=80:raise RuntimeError(f'Expected 80 distinct actual native frames; got {len(frames)}')
+          picks=[24,60,87,111,144,168,198,225]
+          labels=['LIFT','WHIP','REDIRECT','SLICE','WAVE','VORTEX','COUNTER','SLAM']
+          # Eight 240x135 thumbnails in a 4x2 contact sheet.
+          board=Image.new('RGB',(960,318),(14,17,19));draw=ImageDraw.Draw(board)
+          for i,(frame,label) in enumerate(zip(picks,labels)):
+            p=src/f'frame_{frame:06d}.png'
+            with Image.open(p) as im:board.paste(im.convert('RGB').resize((240,135)),((i%4)*240,(i//4)*159))
+            draw.text(((i%4)*240+10,(i//4)*159+139),f'{frame/24:.2f}s {label}',fill=(230,237,240))
+          board.save(out/'V11_NATIVE_COARSE_CONTACT.jpg',quality=90)
+          # ffmpeg glob uses sorted filenames, every third physical 24 Hz state.
+          # The 8 fps diagnostic has 80 unique genuine native frames in 10 s.
+          subprocess.run(['ffmpeg','-v','error','-y','-framerate','8','-pattern_type','glob',
+            '-i',str(src/'frame_*.png'),'-frames:v','80','-c:v','libx264','-crf','17',
+            '-pix_fmt','yuv420p','-movflags','+faststart',str(out/'V11_8FPS_NATIVE_COARSE_REVIEW.mp4')],check=True)
+          digests=[hashlib.sha256(p.read_bytes()).hexdigest() for p in frames]
+          if len(set(digests))!=80:raise RuntimeError('Repeated native review frame')
+          (out/'REVIEW_PROVENANCE.json').write_text(json.dumps({
+            'scene':'waterbending_martial_v11','solver_dx_m':.12,'frames':80,
+            'original_simulation_fps':24,'output_fps':8,'duration_s':10,
+            'visual_approval':False,'not_production_resolution':True,
+            'source_frame_numbers':list(range(0,240,3))},indent=2))
+          PY
+      - name: Publish verified review movie on feature branch
+        run: |
+          set -euo pipefail
+          mkdir -p media/v11
+          cp choreography-v7/runs/martial-v11-review/delivery/V11_8FPS_NATIVE_COARSE_REVIEW.mp4 media/v11/
+          cp choreography-v7/runs/martial-v11-review/delivery/V11_NATIVE_COARSE_CONTACT.jpg media/v11/
+          cp choreography-v7/runs/martial-v11-review/delivery/REVIEW_PROVENANCE.json media/v11/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add media/v11/
+          git commit -m "Publish 10-second V11 native coarse motion review from distinct solver states"
+          git push origin HEAD:"$GITHUB_REF_NAME"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: martial-v11-coarse-native-review
+          path: |
+            choreography-v7/runs/martial-v11-review/delivery/
+            choreography-v7/runs/martial-v11-review/cache/gallery_scene.json
+            choreography-v7/runs/martial-v11-review/cache/manifest.json
+            choreography-v7/runs/martial-v11-review/logs/
+          if-no-files-found: warn
