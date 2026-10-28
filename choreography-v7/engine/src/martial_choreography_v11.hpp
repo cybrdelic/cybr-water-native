@@ -83,9 +83,30 @@ struct MartialGuideV11 {
     float time=0;
     std::array<Hand,2> hands{};
     std::array<float,8> weight{};
+    // The previous per-face cubic evaluation multiplied the cost of each MAC
+    // step by 32 curve evaluations. Cache the moving geometry once per step.
+    static constexpr int whipSegments=16;
+    std::array<std::array<Vec3,whipSegments+1>,2> whipCurve{};
+    std::array<Vec3,2> whipLower{},whipUpper{};
     void prepare(double seconds) {
         time=float(seconds);
         hands={hand(0,time),hand(1,time)};
+        for(int h=0;h<2;h++) {
+            float sign=h?1.f:-1.f;
+            Vec3 a{sign*.28f,.22f,.09f},b{sign*.51f,.84f,.22f};
+            Vec3 end=hands[h].p,control=end+Vec3(-sign*.23f,.18f,-.12f);
+            Vec3 lo=a,hi=a;
+            for(int i=0;i<=whipSegments;i++) {
+                float u=float(i)/whipSegments,v=1.f-u;
+                Vec3 x=a*(v*v*v)+b*(3*v*v*u)+control*(3*v*u*u)+end*(u*u*u);
+                whipCurve[h][i]=x;
+                for(int axis=0;axis<3;axis++) {
+                    lo[axis]=std::min(lo[axis],x[axis]);
+                    hi[axis]=std::max(hi[axis],x[axis]);
+                }
+            }
+            whipLower[h]=lo;whipUpper[h]=hi;
+        }
         weight={{
             envelope(-.10f,.25f,1.06f,1.50f,time),
             envelope(.82f,1.28f,2.06f,2.55f,time),
@@ -114,17 +135,17 @@ struct MartialGuideV11 {
     // The whip's visible trajectory curves from its basin root to the hand.
     // Only its velocity field is used: never surface/particle geometry.
     void whip(Vec3 p,int h,Accum &out,float intensity) const {
-        const Hand &H=hands[h];float s=h?1.f:-1.f;
-        Vec3 a{s*.28f,.22f,.09f},b{s*.51f,.84f,.22f};
-        Vec3 c=H.p+Vec3(-s*.23f,.18f,-.12f);
-        Vec3 last=a;float dmin=1.e12f,uq=0;Vec3 closest{},tangent{};
-        for(int i=1;i<=16;i++) {
-            float u=float(i)/16.f,r=1-u;
-            Vec3 next=a*(r*r*r)+b*(3*r*r*u)+c*(3*r*u*u)+H.p*(u*u*u);
+        // Conservative closest-segment pruning: a point outside the entire
+        // expanded curve AABB cannot enter the .185 m capture tube.
+        for(int axis=0;axis<3;axis++)
+            if(p[axis]<whipLower[h][axis]-.186f||
+               p[axis]>whipUpper[h][axis]+.186f)return;
+        const Hand &H=hands[h];
+        float dmin=1.e12f,uq=0;Vec3 closest{},tangent{};
+        for(int i=1;i<=whipSegments;i++) {
             Vec3 foot,tan;
-            float d=segment(p,last,next,foot,tan);
-            if(d<dmin){dmin=d;closest=foot;tangent=tan;uq=(i-.5f)/16.f;}
-            last=next;
+            float d=segment(p,whipCurve[h][i-1],whipCurve[h][i],foot,tan);
+            if(d<dmin){dmin=d;closest=foot;tangent=tan;uq=(i-.5f)/whipSegments;}
         }
         float tube=bell(dmin,.055f,.185f)*bell(std::abs(p.y-.84f),.72f,1.35f);
         float exposedTip=1.f-.75f*ease(.78f,1.f,uq);
