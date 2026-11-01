@@ -1,0 +1,28 @@
+name: Export native V6 source
+
+on:
+  push:
+    branches:
+      - codex/native-v6-source-export
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Package native V6 source
+        run: |
+          zip -r native-v6-source.zip native-v6
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-v6-source
+          path: native-v6-source.zip
+          retention-days: 1
