@@ -248,8 +248,24 @@ struct MartialGuideV11 {
             float shoulder=bell(std::abs(p.y-.30f),.13f,.48f)*
                            bell(std::abs(p.x),1.10f,1.75f)*
                            bell(std::abs(p.z-z),.25f,.68f);
-            out.add(Vec3(0,1.9f*crest,-3.15f-.45f*u),
-                    w*(1.15f*crest+.34f*shoulder));
+            // Brake the travelling sheet before it leaves the later vortex's
+            // reach. The wider catch draws the same primary liquid back toward
+            // the next attack through velocity feedback.
+            const float brake = ease(4.95f,5.52f,time);
+            const float catchRegion =
+                bell(std::abs(p.x),1.25f,2.15f) *
+                bell(std::abs(p.z+.55f),1.40f,2.35f) *
+                bell(std::abs(p.y-.55f),.42f,.85f);
+            const Vec3 outbound{0.f,1.9f*crest,-3.15f-.45f*u};
+            const Vec3 incoming{
+                clamp(-1.6f*p.x,-2.2f,2.2f),
+                clamp((.64f-p.y)*3.5f,-1.5f,2.0f),
+                clamp((-.50f-p.z)*2.8f,-2.4f,2.4f)
+            };
+            const Vec3 target = outbound*(1.f-brake) + incoming*brake;
+            const float capture = std::max(1.15f*crest+.34f*shoulder,
+                                           1.10f*brake*catchRegion);
+            out.add(target,w*capture);
         }
         if((w=weight[5])>0) {
             float ann=bell(std::abs(radius-.44f),.07f,.28f)*

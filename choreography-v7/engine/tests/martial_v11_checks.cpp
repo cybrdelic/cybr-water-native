@@ -62,8 +62,12 @@ int main() {
     guide.prepare(2.70f);
     check(guide.sample({0.f,.30f,0.f},2.70f).rate==0.f,
           "redirect directly drives the pool");
+    guide.prepare(5.60f);
+    auto waveReturn=guide.sample({0.f,.64f,-1.25f},5.60f);
+    check(waveReturn.rate>5.f && waveReturn.target.z>.5f,
+          "wave carries liquid away from the following vortex");
     const float transitions[]={.25f,.82f,1.06f,1.28f,1.50f,1.80f,1.97f,2.04f,2.55f,
-      3.02f,3.40f,3.43f,3.92f,4.20f,4.54f,4.68f,5.34f,5.75f,5.92f,
+      3.02f,3.40f,3.43f,3.92f,4.20f,4.54f,4.68f,4.95f,5.34f,5.52f,5.75f,5.92f,
       6.76f,7.14f,7.28f,7.64f,8.01f,8.47f,8.90f};
     for(float t:transitions){
       Guide a,b;a.prepare(t-.0001f);b.prepare(t+.0001f);
