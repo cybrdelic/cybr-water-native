@@ -109,3 +109,7 @@ combat-checks: build/combat_choreography_checks
 build/martial_v11_checks: tests/martial_v11_checks.cpp src/gallery_scenes.hpp src/martial_choreography_v11.hpp src/fluid.hpp | build
 	$(CXX) $(CXXFLAGS) $< -o $@
 
+
+# Every gallery-scene consumer includes the V11 controller transitively. Avoid
+# stale scene/test binaries when only that controller header changes.
+build/gallery_export build/retained_guidance_checks build/splash_boundary_checks build/scene_regression build/choreography_checks build/combat_choreography_checks: src/martial_choreography_v11.hpp

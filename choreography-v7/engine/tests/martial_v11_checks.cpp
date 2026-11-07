@@ -43,6 +43,15 @@ int main() {
     }
     check(maxTarget<=5.201f,"guide exceeded target-speed cap");
     check(maxAcceleration<=9.812f,"guide exceeded acceleration cap");
+    // The 3 cm review showed thick columns; the corrected whip must retain
+    // centerline transport without entraining water 15 cm away from the curve.
+    guide.prepare(1.60f);
+    Vec3 whipCenter=guide.whipCurve[0][8];
+    auto core=guide.sample(whipCenter,1.60f);
+    auto fringe=guide.sample(whipCenter+Vec3(0,0,.15f),1.60f);
+    check(core.rate>10.f&&length(core.target)>1.f,"whip lost centerline transport");
+    check(fringe.rate==0.f&&length(fringe.acceleration)==0.f,
+          "whip entrains broad column outside narrow capture support");
     const float transitions[]={.25f,.82f,1.06f,1.28f,1.50f,2.02f,2.35f,2.55f,
       3.02f,3.43f,3.61f,4.20f,4.54f,4.68f,5.34f,5.75f,5.92f,
       6.76f,7.14f,7.28f,7.64f,8.01f,8.47f,8.90f};

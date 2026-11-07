@@ -28,8 +28,14 @@ def main()->None:
  ap.add_argument('--surface-threads',type=int,default=3)
  ap.add_argument('--trace-threads',type=int,default=1)
  ap.add_argument('--samples',type=int,default=4);ap.add_argument('--adaptive-aa',type=int,default=16)
+ ap.add_argument('--integrator',choices=['preview','path'],default='preview')
+ ap.add_argument('--bounces',type=int,default=20)
+ ap.add_argument('--branch-cutoff',type=float,default=.001)
+ ap.add_argument('--environment',choices=['neutral','forest','studio','overcast','daylight'],default='overcast')
  a=ap.parse_args()
  if a.trace_threads<1:ap.error('--trace-threads must be positive')
+ if not 2<=a.bounces<=128 or not 0<a.branch_cutoff<1:ap.error('Invalid transport depth or branch cutoff')
+ if a.integrator=='path' and a.adaptive_aa:ap.error('Path integration requires --adaptive-aa 0')
  take=a.take.resolve();assets=a.scene_assets.resolve()
  frames=[int(x) for x in a.select.split(',')] if a.select else list(range(240))
  if not frames or any(i<0 or i>=240 for i in frames):ap.error('Frame out of range')
@@ -37,15 +43,24 @@ def main()->None:
  logs=out/'logs';work=out/'work';logs.mkdir(exist_ok=True);work.mkdir(exist_ok=True)
  b=ROOT/'engine/build';previous=None;futures=set();start=time.monotonic()
  source={p.name:sha(p) for p in (ROOT/'engine/src').glob('*') if p.is_file()}
+ simulation_identity_path=(take/'cache').resolve().parent/'source_identity.json'
+ simulation_identity=json.loads(simulation_identity_path.read_text()) if simulation_identity_path.is_file() else None
  preset=json.loads((take/'cache/gallery_scene.json').read_text());camera=','.join(map(str,preset['camera']));target=','.join(map(str,preset['target']))
  def render_command(mesh:Path,spheres:Path,stem:Path)->list[str]:
-  return [str(b/'trace_native'),'--water',str(mesh),'--spheres',str(spheres),'--solids',str(assets/'solids.mesh'),'--out',str(stem),
-       '--width',str(a.width),'--height',str(a.height),'--spp',str(a.samples),'--bounces','20','--branch-cutoff','.001',
+  command=[str(b/'trace_native'),'--water',str(mesh),'--spheres',str(spheres),'--solids',str(assets/'solids.mesh'),'--out',str(stem),
+       '--width',str(a.width),'--height',str(a.height),'--spp',str(a.samples),'--bounces',str(a.bounces),'--branch-cutoff',('.001' if a.branch_cutoff==.001 else str(a.branch_cutoff)),
        '--threads',str(a.trace_threads),'--camera',camera,'--target',target,'--fov',str(preset['vertical_fov_degrees']),
-       '--aperture','0','--environment','overcast','--sky-power','1.2','--sun-power','0','--deterministic-preview',
+       '--aperture','0','--environment',a.environment,'--sky-power','1.2','--sun-power','0',
        '--absorption','.18,.045,.025','--wet-level','.20','--wet-reach','.10','--coherent-normals','--oriented-foam',
        '--adaptive-aa',str(a.adaptive_aa),'--aa-threshold','.035','--diffuse-samples','24',
        '--diffuse-cache',str(out/'static_diffuse.bin'),'--background-cache',str(out/'immutable_background.bin')]
+  if a.integrator=='preview':command.append('--deterministic-preview')
+  else:
+   # The immutable-ray and diffuse caches belong to the deterministic preview.
+   # A path reference must sample the transport instead of reusing that image.
+   for flag in ('--diffuse-cache','--background-cache'):
+    index=command.index(flag);del command[index:index+2]
+  return command
  contract=make_contract(source,render_command(work/'identity.mesh',work/'identity.csv',work/'identity'),assets)
  contract['native_binary_sha256']={name:sha(b/name) for name in ('surface','trace_native')}
  freeze_contract(out,contract)
@@ -58,7 +73,7 @@ def main()->None:
    if image.size!=(a.width,a.height):raise RuntimeError('Wrong size')
    rgb_sha=hashlib.sha256(image.tobytes()).hexdigest();save_png_atomic(image,png)
   receipt={'frame':i,'time_s':i/24,'selected_frame_review':selected,'png_sha256':sha(png),'rgb_sha256':rgb_sha,
-           'source_states':source_record,'source_code_sha256':source,'render_contract_sha256':sha(out/'render_contract.json'),'surface':geometry,'render':report,'command':cmd}
+           'source_states':source_record,'simulation_source_identity':simulation_identity,'source_code_sha256':source,'render_contract_sha256':sha(out/'render_contract.json'),'surface':geometry,'render':report,'command':cmd}
   receipt.update(phase_record)
   tmp=out/(name+'.json.tmp');tmp.write_text(json.dumps(receipt,indent=2));tmp.rename(out/(name+'.json'))
   for f in work.glob(name+'*'):f.unlink()

@@ -11,6 +11,11 @@ namespace water { namespace choreography {
 struct MartialGuideV11 {
     static constexpr float releaseEnd=8.90f;
     static constexpr int keyCount=19;
+    // 3 cm native review showed broad columns even at the intended resolution.
+    // Limit the entrained pool cross-section rather than thinning the mesh.
+    // These are force-support radii in metres, not a prescribed liquid surface.
+    static constexpr float scoopCore=.030f, scoopCapture=.140f;
+    static constexpr float whipCore=.025f, whipCapture=.100f;
     struct Hand { Vec3 p{},v{}; };
     static float ease(float a,float b,float t) {
         float q=clamp((t-a)/(b-a),0.f,1.f);
@@ -136,10 +141,10 @@ struct MartialGuideV11 {
     // Only its velocity field is used: never surface/particle geometry.
     void whip(Vec3 p,int h,Accum &out,float intensity) const {
         // Conservative closest-segment pruning: a point outside the entire
-        // expanded curve AABB cannot enter the .185 m capture tube.
+        // expanded curve AABB cannot enter the capture tube.
         for(int axis=0;axis<3;axis++)
-            if(p[axis]<whipLower[h][axis]-.186f||
-               p[axis]>whipUpper[h][axis]+.186f)return;
+            if(p[axis]<whipLower[h][axis]-whipCapture-.001f||
+               p[axis]>whipUpper[h][axis]+whipCapture+.001f)return;
         const Hand &H=hands[h];
         float dmin=1.e12f,uq=0;Vec3 closest{},tangent{};
         for(int i=1;i<=whipSegments;i++) {
@@ -147,7 +152,7 @@ struct MartialGuideV11 {
             float d=segment(p,whipCurve[h][i-1],whipCurve[h][i],foot,tan);
             if(d<dmin){dmin=d;closest=foot;tangent=tan;uq=(i-.5f)/whipSegments;}
         }
-        float tube=bell(dmin,.055f,.185f)*bell(std::abs(p.y-.84f),.72f,1.35f);
+        float tube=bell(dmin,whipCore,whipCapture)*bell(std::abs(p.y-.84f),.72f,1.35f);
         float exposedTip=1.f-.75f*ease(.78f,1.f,uq);
         Vec3 speed=H.v*(.45f+.55f*uq)+tangent*(2.60f*exposedTip);
         speed+=(closest-p)*6.0f;
@@ -168,7 +173,7 @@ struct MartialGuideV11 {
             const Hand &H=hands[h];float s=h?1.f:-1.f;
             Vec3 foot,tan,root{s*.28f,.20f,.07f};
             float d=segment(p,root,H.p,foot,tan);
-            float tube=bell(d,.06f,.26f)*bell(std::abs(p.y-.65f),.8f,1.45f);
+            float tube=bell(d,scoopCore,scoopCapture)*bell(std::abs(p.y-.65f),.8f,1.45f);
             out.add(H.v*.70f+tan*1.42f+(foot-p)*7.f+Vec3(0,.58f,0),w*tube);
         }
         if((w=weight[1])>0) {

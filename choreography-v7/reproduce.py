@@ -165,9 +165,12 @@ def main()->None:
  ap.add_argument('--dx',type=float,default=.03,help='Pressure-grid cell size in metres. .03 is production target; .12 is a coarse choreography review.')
  continuation=ap.add_mutually_exclusive_group()
  continuation.add_argument('--skip-simulation',action='store_true');continuation.add_argument('--resume',action='store_true')
+ ap.add_argument('--stop-after-frame',type=int,default=240,help='Bounded native prefix; values below 240 require --simulation-only. No full-take certification is issued.')
  ap.add_argument('--simulation-only',action='store_true');ap.add_argument('--width',type=int,default=960);ap.add_argument('--height',type=int,default=540)
  ap.add_argument('--threads',type=int,default=2);ap.add_argument('--workers',type=int,default=2)
  a=ap.parse_args();out=a.out.resolve();out.mkdir(parents=True,exist_ok=True);logs=out/'logs';logs.mkdir(exist_ok=True)
+ if not 0<=a.stop_after_frame<=240:ap.error('--stop-after-frame must be between 0 and 240')
+ if a.stop_after_frame<240 and not a.simulation_only:ap.error('Bounded prefixes require --simulation-only; render selected states separately')
  if not 1<=a.threads<=32 or not 1<=a.workers<=16:ap.error('Thread/worker count out of range')
  if a.width<32 or a.height<32 or a.width%2 or a.height%2:ap.error('Even image dimensions >=32 required')
  if not .018<=a.dx<=.12:ap.error('Grid dx must be between .018 and .12 metres')
@@ -189,11 +192,13 @@ def main()->None:
  if not (assets/'solids.mesh').exists() or not (assets/'solid.sdf').exists():
   run([str(b/'gallery_export'),'--scene',a.scene,'--out',str(assets/'solids.mesh'),'--quality','1','--sdf-out',str(assets/'solid.sdf'),'--sdf-dx','.025','--sdf-lower','-5,-.12,-5','--sdf-upper','5,3,8'],logs/'scene_export.log')
  cmd=[str(b/'gallery_sim'),'--scene',a.scene,'--dx',format(a.dx,'.8g'),'--duration','10','--fps','24','--threads',str(a.threads),'--out',str(out/'cache'),'--apic','--particles-per-axis','3','--reseed-interval','0','--whitewater-rate','24000','--max-whitewater','180000','--surface-tension','.072','--auto-domain','--domain-padding','.48','--domain-lower','-1.98,-.12,-1.50','--domain-upper','1.98,2.82,1.50']
+ if a.stop_after_frame<240:cmd.extend(['--stop-after-frame',str(a.stop_after_frame)])
  if a.resume:
   original=json.loads((out/'simulation_command.json').read_text())
   original[0]=str(b/'gallery_sim')
+  replace_option(original,'--stop-after-frame',str(a.stop_after_frame))
   complete=out/'cache/complete.json'
-  finished=complete.is_file() and json.loads(complete.read_text()).get('frame')==240
+  finished=complete.is_file() and json.loads(complete.read_text()).get('frame')==a.stop_after_frame
   if not finished:
    resumed,recovery=prepare_resume(original,out/'cache',float(option(original,'--fps')))
    print(f'Resuming full native checkpoint at frame {recovery["frame"]}; original suffix retained in {recovery["backup_directory"]}',flush=True)
@@ -202,6 +207,8 @@ def main()->None:
   if any((out/'cache').glob('frame_*.bin')):raise RuntimeError('Use a fresh --out; existing fluid states are never overwritten')
   (out/'simulation_command.json').write_text(json.dumps(cmd,indent=2));run_simulation(cmd,logs/'simulation.log',out/'cache')
  if not (out/'cache/complete.json').exists():raise RuntimeError('Completed source cache required')
+ if json.loads((out/'cache/complete.json').read_text()).get('frame')!=a.stop_after_frame:
+  raise RuntimeError('Cache completion does not match the requested full or bounded prefix')
  if a.simulation_only:return
  run([sys.executable,str(ROOT/'render_take.py'),'--take',str(out),'--scene-assets',str(assets),'--width',str(a.width),'--height',str(a.height),'--workers',str(a.workers)],logs/'native_render.log')
  run([sys.executable,str(ROOT/'verify_export.py'),'--take',str(out)],logs/'export_verification.log')
