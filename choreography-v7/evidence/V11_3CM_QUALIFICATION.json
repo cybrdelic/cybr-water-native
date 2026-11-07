@@ -1,0 +1,57 @@
+{
+  "baseline_revision": "32c97c3ecd5f2a73116a9783efa99b313b35bd39",
+  "local_implementation_revision": "1a508f9d91e402e8756f84a1731439a9b0a8edf7",
+  "visual_acceptance": false,
+  "reviewed_state_prefix": [
+    0,
+    84
+  ],
+  "reviewed_time_s": [
+    0,
+    3.5
+  ],
+  "motion_source_range_s": [
+    0,
+    2
+  ],
+  "motion_fps": 8,
+  "primary_count_3cm": 439624,
+  "primary_volume_m3": 0.4396239988900561,
+  "matched_6_thread_above_08m_at_1s_m3": {
+    "before": 0.08765599977868987,
+    "after": 0.01839299995356214
+  },
+  "above_08m_reduction_at_1s_percent": 79.01683855069818,
+  "thread_sensitivity": {
+    "scope": "One-second confirmation only; main exploratory comparison uses 6 vs 4 solver threads. This probe uses 6 threads to match the original. No performance comparison is inferred.",
+    "max_primary_position_difference_m": 0.0015390884364023805,
+    "rms_primary_position_difference_m": 8.043354682740755e-06,
+    "above_08m_markers_4_threads": 18394,
+    "above_08m_markers_6_threads": 18393
+  },
+  "substep_ledger_coverage_s": {
+    "before": [
+      0.0,
+      2.337962963
+    ],
+    "after": [
+      0.0,
+      3.49999999984
+    ],
+    "coarse_before": [
+      0.0,
+      3.49999999938
+    ],
+    "after_thread6": [
+      0.0,
+      0.999999999845
+    ]
+  },
+  "baseline_preservation": {
+    "native-v6": true,
+    "choreography-v7/engine/src/fluid.hpp": true,
+    "choreography-v7/engine/src/surface.cpp": true,
+    "choreography-v7/engine/src/trace.cpp": true,
+    "choreography-v7/engine/src/gallery_scenes.hpp": true
+  }
+}

@@ -11,6 +11,11 @@ namespace water { namespace choreography {
 struct MartialGuideV11 {
     static constexpr float releaseEnd=8.90f;
     static constexpr int keyCount=19;
+    // 3 cm native review showed broad columns even at the intended resolution.
+    // Limit the entrained pool cross-section rather than thinning the mesh.
+    // These are force-support radii in metres, not a prescribed liquid surface.
+    static constexpr float scoopCore=.030f, scoopCapture=.140f;
+    static constexpr float whipCore=.025f, whipCapture=.100f;
     struct Hand { Vec3 p{},v{}; };
     static float ease(float a,float b,float t) {
         float q=clamp((t-a)/(b-a),0.f,1.f);
@@ -88,6 +93,11 @@ struct MartialGuideV11 {
     static constexpr int whipSegments=16;
     std::array<std::array<Vec3,whipSegments+1>,2> whipCurve{};
     std::array<Vec3,2> whipLower{},whipUpper{};
+    struct RedirectLobe {
+        Vec3 center, radial, tangent, velocity;
+    };
+    std::array<RedirectLobe, 2> redirectLobes{};
+
     void prepare(double seconds) {
         time=float(seconds);
         hands={hand(0,time),hand(1,time)};
@@ -107,10 +117,27 @@ struct MartialGuideV11 {
             }
             whipLower[h]=lo;whipUpper[h]=hi;
         }
+        // Meet the outbound streams while they are still elevated. Sweep the
+        // two lobes in opposite positions around the basin, with the same
+        // angular velocity, so the incoming sheets do not collide head-on.
+        const float turn = ease(1.97f, 3.43f, time);
+        const float u = clamp((time - 1.97f) / (3.43f - 1.97f), 0.f, 1.f);
+        const float turnRate = 30.f * u * u * (1.f-u) * (1.f-u) / (3.43f-1.97f);
+        const float orbitRadius = .72f - .21f * turn;
+        const float angle = 1.55f * turn;
+        const Vec3 direction{std::cos(angle), 0.f, -std::sin(angle)};
+        for(int side=0; side<2; ++side) {
+            const Vec3 radial = direction * (side ? 1.f : -1.f);
+            const Vec3 tangent{radial.z, 0.f, -radial.x};
+            const Vec3 center = Vec3{0.f, .97f + .11f * turn, .09f} + radial * orbitRadius;
+            const Vec3 velocity = (tangent * (1.55f * orbitRadius) -
+                                   radial * .21f + Vec3{0.f,.11f,0.f}) * turnRate;
+            redirectLobes[side] = {center, radial, tangent, velocity};
+        }
         weight={{
             envelope(-.10f,.25f,1.06f,1.50f,time),
             envelope(.82f,1.28f,2.06f,2.55f,time),
-            envelope(2.02f,2.35f,3.12f,3.61f,time),
+            envelope(1.80f,2.04f,3.40f,3.92f,time),
             envelope(3.02f,3.43f,4.20f,4.68f,time),
             envelope(4.20f,4.54f,5.40f,5.92f,time),
             envelope(5.34f,5.75f,6.76f,7.28f,time),
@@ -136,10 +163,10 @@ struct MartialGuideV11 {
     // Only its velocity field is used: never surface/particle geometry.
     void whip(Vec3 p,int h,Accum &out,float intensity) const {
         // Conservative closest-segment pruning: a point outside the entire
-        // expanded curve AABB cannot enter the .185 m capture tube.
+        // expanded curve AABB cannot enter the capture tube.
         for(int axis=0;axis<3;axis++)
-            if(p[axis]<whipLower[h][axis]-.186f||
-               p[axis]>whipUpper[h][axis]+.186f)return;
+            if(p[axis]<whipLower[h][axis]-whipCapture-.001f||
+               p[axis]>whipUpper[h][axis]+whipCapture+.001f)return;
         const Hand &H=hands[h];
         float dmin=1.e12f,uq=0;Vec3 closest{},tangent{};
         for(int i=1;i<=whipSegments;i++) {
@@ -147,7 +174,7 @@ struct MartialGuideV11 {
             float d=segment(p,whipCurve[h][i-1],whipCurve[h][i],foot,tan);
             if(d<dmin){dmin=d;closest=foot;tangent=tan;uq=(i-.5f)/whipSegments;}
         }
-        float tube=bell(dmin,.055f,.185f)*bell(std::abs(p.y-.84f),.72f,1.35f);
+        float tube=bell(dmin,whipCore,whipCapture)*bell(std::abs(p.y-.84f),.72f,1.35f);
         float exposedTip=1.f-.75f*ease(.78f,1.f,uq);
         Vec3 speed=H.v*(.45f+.55f*uq)+tangent*(2.60f*exposedTip);
         speed+=(closest-p)*6.0f;
@@ -168,16 +195,34 @@ struct MartialGuideV11 {
             const Hand &H=hands[h];float s=h?1.f:-1.f;
             Vec3 foot,tan,root{s*.28f,.20f,.07f};
             float d=segment(p,root,H.p,foot,tan);
-            float tube=bell(d,.06f,.26f)*bell(std::abs(p.y-.65f),.8f,1.45f);
+            float tube=bell(d,scoopCore,scoopCapture)*bell(std::abs(p.y-.65f),.8f,1.45f);
             out.add(H.v*.70f+tan*1.42f+(foot-p)*7.f+Vec3(0,.58f,0),w*tube);
         }
         if((w=weight[1])>0) {
             whip(p,0,out,w*.95f);whip(p,1,out,w);
         }
-        if((w=weight[2])>0) {
-            float ann=bell(std::abs(radius-.46f),.09f,.28f)*
-                      bell(std::abs(p.y-.94f),.50f,.89f);
-            out.add(tangent*3.4f-radial*.45f+Vec3(0,.26f,0),w*ann);
+        if((w=weight[2])>0 && p.y>.40f) {
+            const float taper = ease(2.10f, 3.20f, time);
+            const float stretch = ease(2.13f, 2.46f, time);
+            for(const auto &lobe : redirectLobes) {
+                const Vec3 offset = p - lobe.center;
+                const float across = dot(offset,lobe.radial);
+                const float along = dot(offset,lobe.tangent);
+                const float reach = .46f - .12f*taper;
+                const float distance = length(Vec3{across/reach, offset.y/.52f, along/.55f});
+                const float capture = bell(distance, .62f, 1.f) * ease(.40f,.58f,p.y);
+                // Gather first, then stretch along the orbit and across the
+                // vertical face of the sheet. The core strain rates sum to
+                // zero; the outer falloffs keep the tips inside the catch.
+                const float alongRate = -3.8f + stretch *
+                    (7.6f - 9.f*ease(.20f,.46f,std::abs(along)));
+                const float verticalRate = -5.5f + stretch *
+                    (7.2f - 7.f*ease(.12f,.31f,std::abs(offset.y)));
+                const Vec3 target = lobe.velocity - lobe.radial*(5.5f*across)
+                    + lobe.tangent*(alongRate*along)
+                    + Vec3{0.f,verticalRate*offset.y+.24f,0.f};
+                out.add(target, 1.35f*w*capture);
+            }
         }
         if((w=weight[3])>0) {
             // A thin plane with finite width, pushed tangentially and
@@ -203,8 +248,24 @@ struct MartialGuideV11 {
             float shoulder=bell(std::abs(p.y-.30f),.13f,.48f)*
                            bell(std::abs(p.x),1.10f,1.75f)*
                            bell(std::abs(p.z-z),.25f,.68f);
-            out.add(Vec3(0,1.9f*crest,-3.15f-.45f*u),
-                    w*(1.15f*crest+.34f*shoulder));
+            // Brake the travelling sheet before it leaves the later vortex's
+            // reach. The wider catch draws the same primary liquid back toward
+            // the next attack through velocity feedback.
+            const float brake = ease(4.95f,5.52f,time);
+            const float catchRegion =
+                bell(std::abs(p.x),1.25f,2.15f) *
+                bell(std::abs(p.z+.55f),1.40f,2.35f) *
+                bell(std::abs(p.y-.55f),.42f,.85f);
+            const Vec3 outbound{0.f,1.9f*crest,-3.15f-.45f*u};
+            const Vec3 incoming{
+                clamp(-1.6f*p.x,-2.2f,2.2f),
+                clamp((.64f-p.y)*3.5f,-1.5f,2.0f),
+                clamp((-.50f-p.z)*2.8f,-2.4f,2.4f)
+            };
+            const Vec3 target = outbound*(1.f-brake) + incoming*brake;
+            const float capture = std::max(1.15f*crest+.34f*shoulder,
+                                           1.10f*brake*catchRegion);
+            out.add(target,w*capture);
         }
         if((w=weight[5])>0) {
             float ann=bell(std::abs(radius-.44f),.07f,.28f)*

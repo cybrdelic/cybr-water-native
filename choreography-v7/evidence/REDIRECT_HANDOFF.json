@@ -1,0 +1,35 @@
+{
+  "redirect_source_commit": "8477b2c660747b7753f6cd017b844438fbcb5004",
+  "wave_source_commit": "12607cf8fa29ebb75e6dc3b6bf20b2e5a53b69c8",
+  "matched_control_source_commit": "fe76a809b14c37e61449f7e640e5632935898893",
+  "simulated_windows_s": [
+    [
+      1.5,
+      4.5
+    ],
+    [
+      4.5,
+      10
+    ]
+  ],
+  "imported_state_boundaries_s": [
+    1.5,
+    4.5
+  ],
+  "primary_count": 439624,
+  "primary_volume_l": 439.6239988900561,
+  "primary_ids_and_marker_volumes_exact": true,
+  "maximum_late_pressure_relative_residual": 2.35122042267e-05,
+  "maximum_late_post_projection_divergence_l2_s_inv": 0.000135684400913,
+  "native_checks_pass": true,
+  "python_tests_pass": 28,
+  "visual_acceptance": false,
+  "remaining_visual_issues": [
+    "Slam lands most primary liquid before force release at 8.9 s.",
+    "Monte Carlo noise and rough breakup remain.",
+    "Single uninterrupted cold-start 3 cm reproduction remains to be qualified."
+  ],
+  "maximum_medium_underflows_in_retained_receipts": 5,
+  "maximum_unclosed_medium_escapes_in_retained_receipts": 597,
+  "maximum_surface_relative_volume_error": 0.001964562859759925
+}
