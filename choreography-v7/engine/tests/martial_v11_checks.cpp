@@ -52,8 +52,18 @@ int main() {
     check(core.rate>10.f&&length(core.target)>1.f,"whip lost centerline transport");
     check(fringe.rate==0.f&&length(fringe.acceleration)==0.f,
           "whip entrains broad column outside narrow capture support");
-    const float transitions[]={.25f,.82f,1.06f,1.28f,1.50f,2.02f,2.35f,2.55f,
-      3.02f,3.43f,3.61f,4.20f,4.54f,4.68f,5.34f,5.75f,5.92f,
+    // At the handoff, the outbound stream is beyond the old .74 m annulus.
+    guide.prepare(2.15f);
+    for(float side : {-1.f,1.f}) {
+      auto catchField=guide.sample({side*1.00f,.97f,.09f},2.15f);
+      check(catchField.rate>4.f && catchField.target.x*side<0.f,
+            "redirect fails to catch and turn the outbound stream");
+    }
+    guide.prepare(2.70f);
+    check(guide.sample({0.f,.30f,0.f},2.70f).rate==0.f,
+          "redirect directly drives the pool");
+    const float transitions[]={.25f,.82f,1.06f,1.28f,1.50f,1.80f,1.97f,2.04f,2.55f,
+      3.02f,3.40f,3.43f,3.92f,4.20f,4.54f,4.68f,5.34f,5.75f,5.92f,
       6.76f,7.14f,7.28f,7.64f,8.01f,8.47f,8.90f};
     for(float t:transitions){
       Guide a,b;a.prepare(t-.0001f);b.prepare(t+.0001f);

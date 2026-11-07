@@ -93,6 +93,11 @@ struct MartialGuideV11 {
     static constexpr int whipSegments=16;
     std::array<std::array<Vec3,whipSegments+1>,2> whipCurve{};
     std::array<Vec3,2> whipLower{},whipUpper{};
+    struct RedirectLobe {
+        Vec3 center, radial, tangent, velocity;
+    };
+    std::array<RedirectLobe, 2> redirectLobes{};
+
     void prepare(double seconds) {
         time=float(seconds);
         hands={hand(0,time),hand(1,time)};
@@ -112,10 +117,27 @@ struct MartialGuideV11 {
             }
             whipLower[h]=lo;whipUpper[h]=hi;
         }
+        // Meet the outbound streams while they are still elevated. Sweep the
+        // two lobes in opposite positions around the basin, with the same
+        // angular velocity, so the incoming sheets do not collide head-on.
+        const float turn = ease(1.97f, 3.43f, time);
+        const float u = clamp((time - 1.97f) / (3.43f - 1.97f), 0.f, 1.f);
+        const float turnRate = 30.f * u * u * (1.f-u) * (1.f-u) / (3.43f-1.97f);
+        const float orbitRadius = .72f - .21f * turn;
+        const float angle = 1.55f * turn;
+        const Vec3 direction{std::cos(angle), 0.f, -std::sin(angle)};
+        for(int side=0; side<2; ++side) {
+            const Vec3 radial = direction * (side ? 1.f : -1.f);
+            const Vec3 tangent{radial.z, 0.f, -radial.x};
+            const Vec3 center = Vec3{0.f, .97f + .11f * turn, .09f} + radial * orbitRadius;
+            const Vec3 velocity = (tangent * (1.55f * orbitRadius) -
+                                   radial * .21f + Vec3{0.f,.11f,0.f}) * turnRate;
+            redirectLobes[side] = {center, radial, tangent, velocity};
+        }
         weight={{
             envelope(-.10f,.25f,1.06f,1.50f,time),
             envelope(.82f,1.28f,2.06f,2.55f,time),
-            envelope(2.02f,2.35f,3.12f,3.61f,time),
+            envelope(1.80f,2.04f,3.40f,3.92f,time),
             envelope(3.02f,3.43f,4.20f,4.68f,time),
             envelope(4.20f,4.54f,5.40f,5.92f,time),
             envelope(5.34f,5.75f,6.76f,7.28f,time),
@@ -179,10 +201,28 @@ struct MartialGuideV11 {
         if((w=weight[1])>0) {
             whip(p,0,out,w*.95f);whip(p,1,out,w);
         }
-        if((w=weight[2])>0) {
-            float ann=bell(std::abs(radius-.46f),.09f,.28f)*
-                      bell(std::abs(p.y-.94f),.50f,.89f);
-            out.add(tangent*3.4f-radial*.45f+Vec3(0,.26f,0),w*ann);
+        if((w=weight[2])>0 && p.y>.40f) {
+            const float taper = ease(2.10f, 3.20f, time);
+            const float stretch = ease(2.13f, 2.46f, time);
+            for(const auto &lobe : redirectLobes) {
+                const Vec3 offset = p - lobe.center;
+                const float across = dot(offset,lobe.radial);
+                const float along = dot(offset,lobe.tangent);
+                const float reach = .46f - .12f*taper;
+                const float distance = length(Vec3{across/reach, offset.y/.52f, along/.55f});
+                const float capture = bell(distance, .62f, 1.f) * ease(.40f,.58f,p.y);
+                // Gather first, then stretch along the orbit and across the
+                // vertical face of the sheet. The core strain rates sum to
+                // zero; the outer falloffs keep the tips inside the catch.
+                const float alongRate = -3.8f + stretch *
+                    (7.6f - 9.f*ease(.20f,.46f,std::abs(along)));
+                const float verticalRate = -5.5f + stretch *
+                    (7.2f - 7.f*ease(.12f,.31f,std::abs(offset.y)));
+                const Vec3 target = lobe.velocity - lobe.radial*(5.5f*across)
+                    + lobe.tangent*(alongRate*along)
+                    + Vec3{0.f,verticalRate*offset.y+.24f,0.f};
+                out.add(target, 1.35f*w*capture);
+            }
         }
         if((w=weight[3])>0) {
             // A thin plane with finite width, pushed tangentially and

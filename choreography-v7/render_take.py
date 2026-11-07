@@ -24,6 +24,7 @@ def main()->None:
  ap=argparse.ArgumentParser(description=__doc__)
  ap.add_argument('--take',type=Path,required=True);ap.add_argument('--scene-assets',type=Path,required=True)
  ap.add_argument('--width',type=int,default=960);ap.add_argument('--height',type=int,default=540)
+ ap.add_argument('--carry-phase',action='store_true',help='Carry fragment phase between selected frames in chronological order')
  ap.add_argument('--select',default='');ap.add_argument('--workers',type=int,default=2)
  ap.add_argument('--surface-threads',type=int,default=3)
  ap.add_argument('--trace-threads',type=int,default=1)
@@ -39,7 +40,10 @@ def main()->None:
  take=a.take.resolve();assets=a.scene_assets.resolve()
  frames=[int(x) for x in a.select.split(',')] if a.select else list(range(240))
  if not frames or any(i<0 or i>=240 for i in frames):ap.error('Frame out of range')
- selected=bool(a.select);out=take/('selected' if selected else 'rendered');out.mkdir(parents=True,exist_ok=True)
+ selected=bool(a.select)
+ carry_phase=not selected or a.carry_phase
+ if carry_phase and frames!=sorted(set(frames)):ap.error('Phase history requires unique, ascending frames')
+ out=take/('selected' if selected else 'rendered');out.mkdir(parents=True,exist_ok=True)
  logs=out/'logs';work=out/'work';logs.mkdir(exist_ok=True);work.mkdir(exist_ok=True)
  b=ROOT/'engine/build';previous=None;futures=set();start=time.monotonic()
  source={p.name:sha(p) for p in (ROOT/'engine/src').glob('*') if p.is_file()}
@@ -94,7 +98,7 @@ def main()->None:
     check_receipt(saved,contract)
     if saved.get('render_contract_sha256')!=sha(out/'render_contract.json'):raise RuntimeError('Changed render contract: '+name)
     if saved.get('phase_sha256')!=sha(phase):raise RuntimeError('Missing or changed reconstruction history: '+name)
-    expected_previous=sha(previous) if previous is not None and not selected else None
+    expected_previous=sha(previous) if previous is not None and carry_phase else None
     if saved.get('previous_phase_sha256')!=expected_previous:raise RuntimeError('Broken reconstruction history chain: '+name)
     if saved['source_code_sha256']!=source or saved['png_sha256']!=sha(png):raise RuntimeError('Stale render: '+name)
     if saved['render'].get('width') not in (None,a.width):raise RuntimeError('Resume resolution mismatch')
@@ -106,8 +110,8 @@ def main()->None:
         '--surface-scale','1.2','--support','6','--smooth','4','--normal-smooth','0','--topology-normal-smooth','4',
         '--center-relax','.25','--max-iso-offset','1.5','--solid-field',str(assets/'solid.sdf'),
         '--coherent-fragments','--phase-out',str(phase)]
-   if previous is not None and not selected:cmd+=['--phase-in',str(previous)]
-   prior_phase_sha=sha(previous) if previous is not None and not selected else None
+   if previous is not None and carry_phase:cmd+=['--phase-in',str(previous)]
+   prior_phase_sha=sha(previous) if previous is not None and carry_phase else None
    run(cmd,logs/(name+'_surface.log'));previous=phase
    phase_record={'phase_sha256':sha(phase),'previous_phase_sha256':prior_phase_sha}
    geometry=json.loads(Path(str(mesh)+'.json').read_text())
